@@ -33,3 +33,30 @@ npm install
 ## Notas rápidas
 - A API segue ESM (`"type": "module"`) e usa o `babel-jest` para transformar os testes com Jest.
 - Para alterar dados iniciais, edite `src/models/bookModel.js` (os dados ficam em memória enquanto o processo estiver ativo).
+
+## Exemplos de `curl`
+- **Listar livros:**
+  ```bash
+  curl http://localhost:3333/api/books
+  ```
+- **Buscar livro por ID:**
+  ```bash
+  curl http://localhost:3333/api/books/1
+  ```
+- **Criar livro:**
+  ```bash
+  curl -X POST http://localhost:3333/api/books \
+    -H "Content-Type: application/json" \
+    -d '{"title":"Iracema","author":"José de Alencar","year":1865,"available":true}'
+  ```
+- **Atualizar livro:**
+  ```bash
+  curl -X PUT http://localhost:3333/api/books/1 \
+    -H "Content-Type: application/json" \
+    -d '{"title":"Iracema","author":"J. de Alencar","year":1865,"available":false}'
+  ```
+- **Remover livro:**
+  ```bash
+  curl -X DELETE http://localhost:3333/api/books/1
+  ```
+
