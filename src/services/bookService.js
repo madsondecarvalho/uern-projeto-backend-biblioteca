@@ -7,16 +7,10 @@ export class ServiceError extends Error {
   }
 }
 
-const validateBookPayload = ({ title, author, year }) => {
-  if (!title || !author || typeof year !== 'number') {
-    throw new ServiceError('Título, autor e ano são obrigatórios', 400);
-  }
-};
+export const listBooks = async () => bookModel.listBooks();
 
-export const listBooks = () => bookModel.listBooks();
-
-export const getBookById = (id) => {
-  const book = bookModel.findBook(id);
+export const getBookById = async (id) => {
+  const book = await bookModel.findBook(id);
 
   if (!book) {
     throw new ServiceError('Livro não encontrado', 404);
@@ -25,22 +19,10 @@ export const getBookById = (id) => {
   return book;
 };
 
-export const createBook = (payload) => {
-  validateBookPayload(payload);
+export const createBook = async (payload) => bookModel.addBook(payload);
 
-  return bookModel.addBook({
-    ...payload,
-    available: Boolean(payload.available)
-  });
-};
-
-export const replaceBook = (id, payload) => {
-  validateBookPayload(payload);
-
-  const updatedBook = bookModel.updateBook(id, {
-    ...payload,
-    available: Boolean(payload.available)
-  });
+export const replaceBook = async (id, payload) => {
+  const updatedBook = await bookModel.updateBook(id, payload);
 
   if (!updatedBook) {
     throw new ServiceError('Livro não encontrado', 404);
@@ -49,8 +31,8 @@ export const replaceBook = (id, payload) => {
   return updatedBook;
 };
 
-export const deleteBook = (id) => {
-  const removed = bookModel.removeBook(id);
+export const deleteBook = async (id) => {
+  const removed = await bookModel.removeBook(id);
 
   if (!removed) {
     throw new ServiceError('Livro não encontrado', 404);

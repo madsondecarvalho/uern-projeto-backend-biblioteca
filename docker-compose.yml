@@ -1,0 +1,37 @@
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: biblioteca
+      MYSQL_USER: biblioteca
+      MYSQL_PASSWORD: biblioteca123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "3333:3333"
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: biblioteca
+      DB_USER: biblioteca
+      DB_PASSWORD: biblioteca123
+      JWT_SECRET: biblioteca-jwt-secret
+    command: >
+      sh -c "npx sequelize-cli db:migrate && npx sequelize-cli db:seed:all && node server.js"
+
+volumes:
+  mysql_data:

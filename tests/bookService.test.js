@@ -13,72 +13,61 @@ describe('bookService', () => {
     jest.restoreAllMocks();
   });
 
-  it('relays the list of books', () => {
+  it('relays the list of books', async () => {
     const books = [{ id: 1 }];
-    jest.spyOn(bookModel, 'listBooks').mockReturnValue(books);
+    jest.spyOn(bookModel, 'listBooks').mockResolvedValue(books);
 
-    expect(listBooks()).toBe(books);
+    await expect(listBooks()).resolves.toBe(books);
   });
 
-  it('returns a book when found', () => {
+  it('returns a book when found', async () => {
     const book = { id: 1 };
-    jest.spyOn(bookModel, 'findBook').mockReturnValue(book);
+    jest.spyOn(bookModel, 'findBook').mockResolvedValue(book);
 
-    expect(getBookById(1)).toBe(book);
+    await expect(getBookById(1)).resolves.toBe(book);
   });
 
-  it('throws when the book is missing', () => {
-    jest.spyOn(bookModel, 'findBook').mockReturnValue(undefined);
+  it('throws when the book is missing', async () => {
+    jest.spyOn(bookModel, 'findBook').mockResolvedValue(undefined);
 
-    expect(() => getBookById(1)).toThrow(ServiceError);
-    expect(() => getBookById(1)).toThrow('Livro não encontrado');
+    await expect(getBookById(1)).rejects.toThrow(ServiceError);
+    await expect(getBookById(1)).rejects.toThrow('Livro não encontrado');
   });
 
-  it('creates a book with normalized availability', () => {
-    const payload = { title: 'book', author: 'author', year: 2024, available: 0 };
-    jest.spyOn(bookModel, 'addBook').mockReturnValue({ id: 10, ...payload, available: false });
+  it('creates a book', async () => {
+    const payload = { title: 'book', author: 'author', year: 2024, available: false };
+    jest.spyOn(bookModel, 'addBook').mockResolvedValue({ id: 10, ...payload });
 
-    expect(createBook(payload)).toEqual({ id: 10, ...payload, available: false });
-    expect(bookModel.addBook).toHaveBeenCalledWith({
-      ...payload,
-      available: false
-    });
+    await expect(createBook(payload)).resolves.toEqual({ id: 10, ...payload });
+    expect(bookModel.addBook).toHaveBeenCalledWith(payload);
   });
 
-  it('rejects invalid payloads', () => {
-    expect(() => createBook({ title: 'book', author: 'author' })).toThrow(ServiceError);
-    expect(() => createBook({ title: 'book', author: 'author' })).toThrow('Título, autor e ano são obrigatórios');
+  it('updates a book when present', async () => {
+    const payload = { title: 'book', author: 'author', year: 2023, available: true };
+    jest.spyOn(bookModel, 'updateBook').mockResolvedValue({ id: 1, ...payload });
+
+    await expect(replaceBook(1, payload)).resolves.toEqual({ id: 1, ...payload });
+    expect(bookModel.updateBook).toHaveBeenCalledWith(1, payload);
   });
 
-  it('updates a book when present', () => {
-    const payload = { title: 'book', author: 'author', year: 2023, available: 1 };
-    jest.spyOn(bookModel, 'updateBook').mockReturnValue({ id: 1, ...payload, available: true });
+  it('throws when updating a missing book', async () => {
+    jest.spyOn(bookModel, 'updateBook').mockResolvedValue(null);
 
-    expect(replaceBook(1, payload)).toEqual({ id: 1, ...payload, available: true });
-    expect(bookModel.updateBook).toHaveBeenCalledWith(1, {
-      ...payload,
-      available: true
-    });
+    await expect(replaceBook(1, { title: 'book', author: 'a', year: 2023 })).rejects.toThrow(ServiceError);
+    await expect(replaceBook(1, { title: 'book', author: 'a', year: 2023 })).rejects.toThrow('Livro não encontrado');
   });
 
-  it('throws when updating a missing book', () => {
-    jest.spyOn(bookModel, 'updateBook').mockReturnValue(null);
+  it('removes a book when available', async () => {
+    jest.spyOn(bookModel, 'removeBook').mockResolvedValue(true);
 
-    expect(() => replaceBook(1, { title: 'book', author: 'a', year: 2023 })).toThrow(ServiceError);
-    expect(() => replaceBook(1, { title: 'book', author: 'a', year: 2023 })).toThrow('Livro não encontrado');
-  });
-
-  it('removes a book when available', () => {
-    jest.spyOn(bookModel, 'removeBook').mockReturnValue(true);
-
-    expect(deleteBook(1)).toBeUndefined();
+    await expect(deleteBook(1)).resolves.toBeUndefined();
     expect(bookModel.removeBook).toHaveBeenCalledWith(1);
   });
 
-  it('throws when deleting a missing book', () => {
-    jest.spyOn(bookModel, 'removeBook').mockReturnValue(false);
+  it('throws when deleting a missing book', async () => {
+    jest.spyOn(bookModel, 'removeBook').mockResolvedValue(false);
 
-    expect(() => deleteBook(1)).toThrow(ServiceError);
-    expect(() => deleteBook(1)).toThrow('Livro não encontrado');
+    await expect(deleteBook(1)).rejects.toThrow(ServiceError);
+    await expect(deleteBook(1)).rejects.toThrow('Livro não encontrado');
   });
 });

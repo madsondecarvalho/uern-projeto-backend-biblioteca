@@ -1,12 +1,12 @@
 import * as bookService from '../services/bookService.js';
 
-export const getAllBooks = (req, res) => {
-  res.json(bookService.listBooks());
+export const getAllBooks = async (req, res) => {
+  res.json(await bookService.listBooks());
 };
 
-export const getBookById = (req, res) => {
+export const getBookById = async (req, res) => {
   try {
-    const book = bookService.getBookById(Number(req.params.id));
+    const book = await bookService.getBookById(Number(req.params.id));
     res.json(book);
   } catch (err) {
     if (err instanceof bookService.ServiceError) {
@@ -17,11 +17,9 @@ export const getBookById = (req, res) => {
   }
 };
 
-export const createBook = (req, res) => {
-  const { title, author, year, available } = req.body;
-
+export const createBook = async (req, res) => {
   try {
-    const newBook = bookService.createBook({ title, author, year, available });
+    const newBook = await bookService.createBook(req.body);
     res.status(201).json(newBook);
   } catch (err) {
     if (err instanceof bookService.ServiceError) {
@@ -32,12 +30,9 @@ export const createBook = (req, res) => {
   }
 };
 
-export const replaceBook = (req, res) => {
-  const id = Number(req.params.id);
-  const { title, author, year, available } = req.body;
-
+export const replaceBook = async (req, res) => {
   try {
-    const updatedBook = bookService.replaceBook(id, { title, author, year, available });
+    const updatedBook = await bookService.replaceBook(Number(req.params.id), req.body);
     res.json(updatedBook);
   } catch (err) {
     if (err instanceof bookService.ServiceError) {
@@ -48,9 +43,9 @@ export const replaceBook = (req, res) => {
   }
 };
 
-export const deleteBook = (req, res) => {
+export const deleteBook = async (req, res) => {
   try {
-    bookService.deleteBook(Number(req.params.id));
+    await bookService.deleteBook(Number(req.params.id));
     res.status(204).send();
   } catch (err) {
     if (err instanceof bookService.ServiceError) {
