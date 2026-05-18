@@ -581,8 +581,8 @@ const swaggerSpec = {
             items: {
               type: 'object',
               properties: {
-                field: { type: 'string', example: 'title' },
-                message: { type: 'string', example: 'Título é obrigatório' },
+                field: { type: 'string', example: 'email' },
+                message: { type: 'string', example: 'Email inválido' },
               },
             },
           },
