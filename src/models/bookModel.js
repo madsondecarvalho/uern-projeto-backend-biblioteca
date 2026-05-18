@@ -1,8 +1,20 @@
-import Book from './book.js';
+import { Book, Category, Author } from './index.js';
 
-export const listBooks = async () => Book.findAll();
+export const listBooks = async (filters = {}) => {
+  const where = {};
 
-export const findBook = async (id) => Book.findByPk(id);
+  if (filters.categoryId) {
+    where.categoryId = Number(filters.categoryId);
+  }
+
+  if (filters.authorId) {
+    where.authorId = Number(filters.authorId);
+  }
+
+  return Book.findAll({ where, include: [Category, Author] });
+};
+
+export const findBook = async (id) => Book.findByPk(id, { include: [Category, Author] });
 
 export const addBook = async (payload) => Book.create(payload);
 
@@ -11,7 +23,7 @@ export const updateBook = async (id, updates) => {
 
   if (affected === 0) return null;
 
-  return Book.findByPk(id);
+  return Book.findByPk(id, { include: [Category, Author] });
 };
 
 export const removeBook = async (id) => {

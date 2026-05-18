@@ -5,6 +5,8 @@ import swaggerSpec from './src/config/swagger.js';
 import bookRoutes from './src/routes/bookRoutes.js';
 import authRoutes from './src/routes/authRoutes.js';
 import userRoutes from './src/routes/userRoutes.js';
+import categoryRoutes from './src/routes/categoryRoutes.js';
+import authorRoutes from './src/routes/authorRoutes.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3333;
@@ -15,6 +17,8 @@ app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api', authRoutes);
 app.use('/api', bookRoutes);
 app.use('/api', userRoutes);
+app.use('/api', categoryRoutes);
+app.use('/api', authorRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Recurso não encontrado' });

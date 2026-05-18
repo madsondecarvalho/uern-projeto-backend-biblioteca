@@ -7,7 +7,7 @@ export class ServiceError extends Error {
   }
 }
 
-export const listBooks = async () => bookModel.listBooks();
+export const listBooks = async (filters = {}) => bookModel.listBooks(filters);
 
 export const getBookById = async (id) => {
   const book = await bookModel.findBook(id);

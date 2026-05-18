@@ -4,8 +4,9 @@ const swaggerSpec = {
     title: 'Biblioteca API',
     version: '1.0.0',
     description:
-      'API de gerenciamento de biblioteca com CRUD de livros, usuários e autenticação JWT.\n\n' +
-      'Endpoints de escrita em usuários (POST/PUT/DELETE) são restritos a administradores.',
+      'API de gerenciamento de biblioteca com CRUD de livros, autores, categorias, usuários e autenticação JWT.\n\n' +
+      'Endpoints de escrita em usuários, categorias e autores (POST/PUT/DELETE) são restritos a administradores.\n\n' +
+      'A listagem de livros aceita os parâmetros opcionais ?categoryId=N e ?authorId=N para filtrar.',
   },
   servers: [
     {
@@ -16,6 +17,8 @@ const swaggerSpec = {
   tags: [
     { name: 'Auth', description: 'Autenticação' },
     { name: 'Books', description: 'Operações com livros' },
+    { name: 'Authors', description: 'Operações com autores' },
+    { name: 'Categories', description: 'Operações com categorias' },
     { name: 'Users', description: 'Operações com usuários' },
   ],
   paths: {
@@ -62,7 +65,23 @@ const swaggerSpec = {
       get: {
         tags: ['Books'],
         summary: 'Listar livros',
-        description: 'Retorna a lista completa de livros cadastrados.',
+        description: 'Retorna a lista de livros. Aceita ?categoryId=N e/ou ?authorId=N para filtrar.',
+        parameters: [
+          {
+            name: 'categoryId',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer' },
+            description: 'Filtrar por ID da categoria',
+          },
+          {
+            name: 'authorId',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer' },
+            description: 'Filtrar por ID do autor',
+          },
+        ],
         responses: {
           200: {
             description: 'Lista de livros',
@@ -88,9 +107,10 @@ const swaggerSpec = {
               schema: { $ref: '#/components/schemas/BookInput' },
               example: {
                 title: 'O Primo Basílio',
-                author: 'José Maria de Eça de Queirós',
+                authorId: 1,
                 year: 1878,
                 available: true,
+                categoryId: 1,
               },
             },
           },
@@ -217,6 +237,474 @@ const swaggerSpec = {
           },
           404: {
             description: 'Livro não encontrado',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' },
+              },
+            },
+          },
+        },
+      },
+    },
+
+    '/authors': {
+      get: {
+        tags: ['Authors'],
+        summary: 'Listar autores',
+        description: 'Retorna a lista de autores cadastrados.',
+        responses: {
+          200: {
+            description: 'Lista de autores',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/Author' },
+                },
+              },
+            },
+          },
+        },
+      },
+      post: {
+        tags: ['Authors'],
+        summary: 'Criar autor',
+        description: 'Cadastra um novo autor. Apenas administradores.',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/AuthorInput' },
+              example: { name: 'Clarice Lispector' },
+            },
+          },
+        },
+        responses: {
+          201: {
+            description: 'Autor criado',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Author' },
+              },
+            },
+          },
+          400: {
+            description: 'Dados inválidos',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ValidationError' },
+              },
+            },
+          },
+          401: {
+            description: 'Não autenticado',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' },
+              },
+            },
+          },
+          403: {
+            description: 'Acesso negado',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' },
+                example: { error: 'Acesso restrito a administradores' },
+              },
+            },
+          },
+          409: {
+            description: 'Autor já existe',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' },
+                example: { error: 'Autor já existe' },
+              },
+            },
+          },
+        },
+      },
+    },
+
+    '/authors/{id}': {
+      get: {
+        tags: ['Authors'],
+        summary: 'Buscar autor por ID',
+        description: 'Retorna os dados de um autor específico.',
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: { type: 'integer' },
+            description: 'ID do autor',
+          },
+        ],
+        responses: {
+          200: {
+            description: 'Autor encontrado',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Author' },
+              },
+            },
+          },
+          404: {
+            description: 'Autor não encontrado',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' },
+                example: { error: 'Autor não encontrado' },
+              },
+            },
+          },
+        },
+      },
+      put: {
+        tags: ['Authors'],
+        summary: 'Atualizar autor',
+        description: 'Atualiza os dados de um autor. Apenas administradores.',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: { type: 'integer' },
+            description: 'ID do autor',
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/AuthorInput' },
+              example: { name: 'Clarice Lispector' },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Autor atualizado',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Author' },
+              },
+            },
+          },
+          400: {
+            description: 'Dados inválidos',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ValidationError' },
+              },
+            },
+          },
+          401: {
+            description: 'Não autenticado',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' },
+              },
+            },
+          },
+          403: {
+            description: 'Acesso negado',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' },
+              },
+            },
+          },
+          404: {
+            description: 'Autor não encontrado',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' },
+              },
+            },
+          },
+          409: {
+            description: 'Autor já existe',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' },
+              },
+            },
+          },
+        },
+      },
+      delete: {
+        tags: ['Authors'],
+        summary: 'Remover autor',
+        description: 'Remove um autor. Apenas administradores.',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: { type: 'integer' },
+            description: 'ID do autor',
+          },
+        ],
+        responses: {
+          204: {
+            description: 'Removido com sucesso',
+          },
+          401: {
+            description: 'Não autenticado',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' },
+              },
+            },
+          },
+          403: {
+            description: 'Acesso negado',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' },
+              },
+            },
+          },
+          404: {
+            description: 'Autor não encontrado',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' },
+              },
+            },
+          },
+        },
+      },
+    },
+
+    '/categories': {
+      get: {
+        tags: ['Categories'],
+        summary: 'Listar categorias',
+        description: 'Retorna a lista de categorias cadastradas.',
+        responses: {
+          200: {
+            description: 'Lista de categorias',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/Category' },
+                },
+              },
+            },
+          },
+        },
+      },
+      post: {
+        tags: ['Categories'],
+        summary: 'Criar categoria',
+        description: 'Cadastra uma nova categoria. Apenas administradores.',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/CategoryInput' },
+              example: { name: 'Policial' },
+            },
+          },
+        },
+        responses: {
+          201: {
+            description: 'Categoria criada',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Category' },
+              },
+            },
+          },
+          400: {
+            description: 'Dados inválidos',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ValidationError' },
+              },
+            },
+          },
+          401: {
+            description: 'Não autenticado',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' },
+              },
+            },
+          },
+          403: {
+            description: 'Acesso negado',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' },
+                example: { error: 'Acesso restrito a administradores' },
+              },
+            },
+          },
+          409: {
+            description: 'Categoria já existe',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' },
+                example: { error: 'Categoria já existe' },
+              },
+            },
+          },
+        },
+      },
+    },
+
+    '/categories/{id}': {
+      get: {
+        tags: ['Categories'],
+        summary: 'Buscar categoria por ID',
+        description: 'Retorna os dados de uma categoria específica.',
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: { type: 'integer' },
+            description: 'ID da categoria',
+          },
+        ],
+        responses: {
+          200: {
+            description: 'Categoria encontrada',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Category' },
+              },
+            },
+          },
+          404: {
+            description: 'Categoria não encontrada',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' },
+                example: { error: 'Categoria não encontrada' },
+              },
+            },
+          },
+        },
+      },
+      put: {
+        tags: ['Categories'],
+        summary: 'Atualizar categoria',
+        description: 'Atualiza os dados de uma categoria. Apenas administradores.',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: { type: 'integer' },
+            description: 'ID da categoria',
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/CategoryInput' },
+              example: { name: 'Suspense' },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Categoria atualizada',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Category' },
+              },
+            },
+          },
+          400: {
+            description: 'Dados inválidos',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ValidationError' },
+              },
+            },
+          },
+          401: {
+            description: 'Não autenticado',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' },
+              },
+            },
+          },
+          403: {
+            description: 'Acesso negado',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' },
+              },
+            },
+          },
+          404: {
+            description: 'Categoria não encontrada',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' },
+              },
+            },
+          },
+          409: {
+            description: 'Categoria já existe',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' },
+              },
+            },
+          },
+        },
+      },
+      delete: {
+        tags: ['Categories'],
+        summary: 'Remover categoria',
+        description: 'Remove uma categoria. Apenas administradores.',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: { type: 'integer' },
+            description: 'ID da categoria',
+          },
+        ],
+        responses: {
+          204: {
+            description: 'Removida com sucesso',
+          },
+          401: {
+            description: 'Não autenticado',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' },
+              },
+            },
+          },
+          403: {
+            description: 'Acesso negado',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' },
+              },
+            },
+          },
+          404: {
+            description: 'Categoria não encontrada',
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/Error' },
@@ -500,21 +988,53 @@ const swaggerSpec = {
         properties: {
           id: { type: 'integer', example: 1 },
           title: { type: 'string', example: 'O Primo Basílio' },
-          author: { type: 'string', example: 'José Maria de Eça de Queirós' },
           year: { type: 'integer', example: 1878 },
           available: { type: 'boolean', example: true },
+          authorId: { type: 'integer', example: 1 },
+          Author: { $ref: '#/components/schemas/Author' },
+          categoryId: { type: 'integer', example: 1, nullable: true },
+          Category: { $ref: '#/components/schemas/Category' },
           createdAt: { type: 'string', format: 'date-time' },
           updatedAt: { type: 'string', format: 'date-time' },
         },
       },
       BookInput: {
         type: 'object',
-        required: ['title', 'author', 'year'],
+        required: ['title', 'authorId', 'year'],
         properties: {
           title: { type: 'string', minLength: 1, example: 'Dom Casmurro' },
-          author: { type: 'string', minLength: 1, example: 'Machado de Assis' },
+          authorId: { type: 'integer', example: 1 },
           year: { type: 'integer', example: 1899 },
           available: { type: 'boolean', default: true, example: false },
+          categoryId: { type: 'integer', example: 1, nullable: true },
+        },
+      },
+      Author: {
+        type: 'object',
+        properties: {
+          id: { type: 'integer', example: 1 },
+          name: { type: 'string', example: 'Machado de Assis' },
+        },
+      },
+      AuthorInput: {
+        type: 'object',
+        required: ['name'],
+        properties: {
+          name: { type: 'string', minLength: 1, example: 'Clarice Lispector' },
+        },
+      },
+      Category: {
+        type: 'object',
+        properties: {
+          id: { type: 'integer', example: 1 },
+          name: { type: 'string', example: 'Clássico' },
+        },
+      },
+      CategoryInput: {
+        type: 'object',
+        required: ['name'],
+        properties: {
+          name: { type: 'string', minLength: 1, example: 'Policial' },
         },
       },
       User: {

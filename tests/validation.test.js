@@ -4,23 +4,24 @@ describe('createBookSchema', () => {
   it('accepts valid payload with default available', () => {
     const result = createBookSchema.safeParse({
       title: 'Book',
-      author: 'Author',
+      authorId: 1,
       year: 2024,
     });
 
     expect(result.success).toBe(true);
     expect(result.data).toEqual({
       title: 'Book',
-      author: 'Author',
+      authorId: 1,
       year: 2024,
       available: true,
+      categoryId: null,
     });
   });
 
   it('accepts valid payload with available=false', () => {
     const result = createBookSchema.safeParse({
       title: 'Book',
-      author: 'Author',
+      authorId: 1,
       year: 2024,
       available: false,
     });
@@ -30,19 +31,19 @@ describe('createBookSchema', () => {
   });
 
   it('rejects missing title', () => {
-    const result = createBookSchema.safeParse({ author: 'Author', year: 2024 });
+    const result = createBookSchema.safeParse({ authorId: 1, year: 2024 });
 
     expect(result.success).toBe(false);
   });
 
-  it('rejects missing author', () => {
+  it('rejects missing authorId', () => {
     const result = createBookSchema.safeParse({ title: 'Book', year: 2024 });
 
     expect(result.success).toBe(false);
   });
 
   it('rejects missing year', () => {
-    const result = createBookSchema.safeParse({ title: 'Book', author: 'Author' });
+    const result = createBookSchema.safeParse({ title: 'Book', authorId: 1 });
 
     expect(result.success).toBe(false);
   });
@@ -50,7 +51,7 @@ describe('createBookSchema', () => {
   it('rejects non-integer year', () => {
     const result = createBookSchema.safeParse({
       title: 'Book',
-      author: 'Author',
+      authorId: 1,
       year: 2024.5,
     });
 
@@ -60,7 +61,7 @@ describe('createBookSchema', () => {
   it('rejects empty title', () => {
     const result = createBookSchema.safeParse({
       title: '',
-      author: 'Author',
+      authorId: 1,
       year: 2024,
     });
 
@@ -72,7 +73,7 @@ describe('replaceBookSchema', () => {
   it('accepts valid payload with available', () => {
     const result = replaceBookSchema.safeParse({
       title: 'Book',
-      author: 'Author',
+      authorId: 1,
       year: 2024,
       available: true,
     });
@@ -83,7 +84,7 @@ describe('replaceBookSchema', () => {
   it('rejects missing available', () => {
     const result = replaceBookSchema.safeParse({
       title: 'Book',
-      author: 'Author',
+      authorId: 1,
       year: 2024,
     });
 
