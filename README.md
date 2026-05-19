@@ -1,6 +1,12 @@
 # Biblioteca API (UERN)
 
-Projeto de backend simples em Node.js/Express que expõe recursos de livros com camada de serviço e controlador.
+Projeto final da disciplina **DSI0015 — Desenvolvimento Web Back-End** do curso de **Sistemas para Internet** da **UERN**.
+
+**Aluno:** Madson Gustavo Fagundes Pinto de Carvalho
+
+---
+
+Projeto de backend em Node.js/Express que expõe recursos de livros, autores, categorias, cópias e reservas com camada de serviço e controlador.
 
 ## Estrutura principal
 - `server.js` - inicializador do servidor e configuração global do Express.
