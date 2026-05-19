@@ -28,6 +28,6 @@ module.exports = {
 
   down: async (queryInterface) => {
     await queryInterface.bulkDelete('Users', null, {});
-    await queryInterface.sequelize.query('ALTER TABLE Users AUTO_INCREMENT = 1');
+    await queryInterface.sequelize.query("ALTER SEQUENCE \"Users_id_seq\" RESTART WITH 1");
   },
 };

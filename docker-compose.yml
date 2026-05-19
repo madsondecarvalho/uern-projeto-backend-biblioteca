@@ -1,17 +1,16 @@
 services:
-  mysql:
-    image: mysql:8.0
+  postgres:
+    image: postgres:16
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: biblioteca
-      MYSQL_USER: biblioteca
-      MYSQL_PASSWORD: biblioteca123
+      POSTGRES_DB: biblioteca
+      POSTGRES_USER: biblioteca
+      POSTGRES_PASSWORD: biblioteca123
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "3306"]
+      test: ["CMD-SHELL", "pg_isready -U biblioteca -d biblioteca"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -20,7 +19,7 @@ services:
   api:
     build: .
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
     ports:
       - "3333:3333"
@@ -28,23 +27,23 @@ services:
       - .:/app
       - /app/node_modules
     environment:
-      DB_HOST: mysql
-      DB_PORT: 3306
+      DB_HOST: postgres
+      DB_PORT: 5432
       DB_NAME: biblioteca
       DB_USER: biblioteca
       DB_PASSWORD: biblioteca123
       JWT_SECRET: biblioteca-jwt-secret
     command: >
       sh -c "
-        echo 'Aguardando MySQL aceitar conexões TCP...' &&
-        while ! timeout 1 bash -c 'cat < /dev/null > /dev/tcp/mysql/3306' 2>/dev/null; do
+        echo 'Aguardando PostgreSQL aceitar conexões...' &&
+        while ! timeout 1 bash -c 'cat < /dev/null > /dev/tcp/postgres/5432' 2>/dev/null; do
           sleep 1
         done &&
-        echo 'MySQL pronto. Executando migrations...' &&
+        echo 'PostgreSQL pronto. Executando migrations...' &&
         npx sequelize-cli db:migrate &&
         echo 'Iniciando API...' &&
         node server.js
       "
 
 volumes:
-  mysql_data:
+  postgres_data:

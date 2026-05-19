@@ -56,6 +56,6 @@ module.exports = {
 
   down: async (queryInterface) => {
     await queryInterface.bulkDelete('Books', null, {});
-    await queryInterface.sequelize.query('ALTER TABLE Books AUTO_INCREMENT = 1');
+    await queryInterface.sequelize.query("ALTER SEQUENCE \"Books_id_seq\" RESTART WITH 1");
   },
 };

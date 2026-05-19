@@ -38,6 +38,6 @@ module.exports = {
 
   down: async (queryInterface) => {
     await queryInterface.bulkDelete('Copies', null, {});
-    await queryInterface.sequelize.query('ALTER TABLE Copies AUTO_INCREMENT = 1');
+    await queryInterface.sequelize.query("ALTER SEQUENCE \"Copies_id_seq\" RESTART WITH 1");
   },
 };
