@@ -1,7 +1,8 @@
 import * as categoryService from '../services/categoryService.js';
 
 export const getAllCategories = async (req, res) => {
-  res.json(await categoryService.listCategories());
+  const { page, limit } = req.query;
+  res.json(await categoryService.listCategories({ page, limit }));
 };
 
 export const getCategoryById = async (req, res) => {

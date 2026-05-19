@@ -1,7 +1,8 @@
 import * as authorService from '../services/authorService.js';
 
 export const getAllAuthors = async (req, res) => {
-  res.json(await authorService.listAuthors());
+  const { page, limit } = req.query;
+  res.json(await authorService.listAuthors({ page, limit }));
 };
 
 export const getAuthorById = async (req, res) => {

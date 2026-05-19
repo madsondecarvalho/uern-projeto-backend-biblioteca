@@ -1,7 +1,8 @@
 import * as bookService from '../services/bookService.js';
 
 export const getAllBooks = async (req, res) => {
-  res.json(await bookService.listBooks(req.query));
+  const { page, limit, ...filters } = req.query;
+  res.json(await bookService.listBooks(filters, { page, limit }));
 };
 
 export const getBookById = async (req, res) => {

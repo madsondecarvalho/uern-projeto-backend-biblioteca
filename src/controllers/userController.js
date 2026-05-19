@@ -1,7 +1,8 @@
 import * as userService from '../services/userService.js';
 
 export const getAllUsers = async (req, res) => {
-  res.json(await userService.listUsers());
+  const { page, limit } = req.query;
+  res.json(await userService.listUsers({ page, limit }));
 };
 
 export const getUserById = async (req, res) => {

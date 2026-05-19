@@ -19,11 +19,12 @@ describe('userController', () => {
   });
 
   it('returns all users', async () => {
+    const req = { query: {} };
     const res = response();
     const users = [{ id: 1, name: 'User' }];
     jest.spyOn(userService, 'listUsers').mockResolvedValue(users);
 
-    await getAllUsers(null, res);
+    await getAllUsers(req, res);
 
     expect(res.json).toHaveBeenCalledWith(users);
   });

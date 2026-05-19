@@ -1,6 +1,6 @@
 import { Book, Category, Author } from './index.js';
 
-export const listBooks = async (filters = {}) => {
+export const listBooks = async (filters = {}, pagination = {}) => {
   const where = {};
 
   if (filters.categoryId) {
@@ -11,7 +11,27 @@ export const listBooks = async (filters = {}) => {
     where.authorId = Number(filters.authorId);
   }
 
-  return Book.findAll({ where, include: [Category, Author] });
+  const page = Math.max(1, Number(pagination.page) || 1);
+  const limit = Math.min(100, Math.max(1, Number(pagination.limit) || 10));
+  const offset = (page - 1) * limit;
+
+  const { rows, count } = await Book.findAndCountAll({
+    where,
+    include: [Category, Author],
+    limit,
+    offset,
+    order: [['id', 'ASC']],
+  });
+
+  return {
+    data: rows,
+    pagination: {
+      page,
+      limit,
+      total: count,
+      totalPages: Math.ceil(count / limit),
+    },
+  };
 };
 
 export const findBook = async (id) => Book.findByPk(id, { include: [Category, Author] });

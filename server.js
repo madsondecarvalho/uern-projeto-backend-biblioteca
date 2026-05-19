@@ -7,6 +7,8 @@ import authRoutes from './src/routes/authRoutes.js';
 import userRoutes from './src/routes/userRoutes.js';
 import categoryRoutes from './src/routes/categoryRoutes.js';
 import authorRoutes from './src/routes/authorRoutes.js';
+import copyRoutes from './src/routes/copyRoutes.js';
+import reservationRoutes from './src/routes/reservationRoutes.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3333;
@@ -19,6 +21,8 @@ app.use('/api', bookRoutes);
 app.use('/api', userRoutes);
 app.use('/api', categoryRoutes);
 app.use('/api', authorRoutes);
+app.use('/api', copyRoutes);
+app.use('/api', reservationRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Recurso não encontrado' });
