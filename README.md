@@ -10,6 +10,17 @@ Projeto de backend simples em Node.js/Express que expõe recursos de livros com 
 - `src/routes` - definição das rotas da API (já integrada ao `Express`).
 - `tests` - suites unitários para service e controller com Jest + mocks.
 
+## Documentação
+
+A documentação completa da API com endpoints, schemas, exemplos curl e diagrama de classes está na pasta [`docs/`](docs/README.md).
+
+- [Autenticação](docs/auth.md) — Login, JWT, usuários de teste
+- [Livros](docs/books.md) — CRUD + filtros
+- [Autores](docs/authors.md), [Categorias](docs/categories.md), [Cópias](docs/copies.md)
+- [Reservas](docs/reservations.md) — Fluxo completo
+- [Usuários e Roles](docs/users.md)
+- [Diagrama de Classes](docs/class-diagram.md)
+
 ## Pré-requisitos
 - Node.js 22 (recomendado) com npm.
 

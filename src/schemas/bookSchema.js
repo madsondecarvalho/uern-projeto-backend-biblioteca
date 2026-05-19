@@ -8,7 +8,6 @@ export const createBookSchema = z.object({
   year: z
     .number({ required_error: 'Ano é obrigatório', invalid_type_error: 'Ano deve ser um número' })
     .int('Ano deve ser um número inteiro'),
-  available: z.boolean().optional().default(true),
   categoryId: z.number().int().positive().optional().nullable().default(null),
 });
 
@@ -20,6 +19,5 @@ export const replaceBookSchema = z.object({
   year: z
     .number({ required_error: 'Ano é obrigatório', invalid_type_error: 'Ano deve ser um número' })
     .int('Ano deve ser um número inteiro'),
-  available: z.boolean({ required_error: 'Disponibilidade é obrigatória' }),
   categoryId: z.number().int().positive().optional().nullable(),
 });

@@ -1,7 +1,7 @@
 import { createBookSchema, replaceBookSchema } from '../src/schemas/bookSchema.js';
 
 describe('createBookSchema', () => {
-  it('accepts valid payload with default available', () => {
+  it('accepts valid payload', () => {
     const result = createBookSchema.safeParse({
       title: 'Book',
       authorId: 1,
@@ -13,21 +13,8 @@ describe('createBookSchema', () => {
       title: 'Book',
       authorId: 1,
       year: 2024,
-      available: true,
       categoryId: null,
     });
-  });
-
-  it('accepts valid payload with available=false', () => {
-    const result = createBookSchema.safeParse({
-      title: 'Book',
-      authorId: 1,
-      year: 2024,
-      available: false,
-    });
-
-    expect(result.success).toBe(true);
-    expect(result.data.available).toBe(false);
   });
 
   it('rejects missing title', () => {
@@ -70,24 +57,13 @@ describe('createBookSchema', () => {
 });
 
 describe('replaceBookSchema', () => {
-  it('accepts valid payload with available', () => {
+  it('accepts valid payload', () => {
     const result = replaceBookSchema.safeParse({
       title: 'Book',
       authorId: 1,
       year: 2024,
-      available: true,
     });
 
     expect(result.success).toBe(true);
-  });
-
-  it('rejects missing available', () => {
-    const result = replaceBookSchema.safeParse({
-      title: 'Book',
-      authorId: 1,
-      year: 2024,
-    });
-
-    expect(result.success).toBe(false);
   });
 });

@@ -15,10 +15,6 @@ const Book = sequelize.define('Book', {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
-  available: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true,
-  },
   categoryId: {
     type: DataTypes.INTEGER,
     allowNull: true,

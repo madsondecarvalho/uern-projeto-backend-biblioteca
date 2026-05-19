@@ -178,7 +178,6 @@ const swaggerSpec = {
                 "title": "O Primo Basílio",
                 "authorId": 1,
                 "year": 1878,
-                "available": true,
                 "categoryId": 1
               }
             }
@@ -2217,10 +2216,6 @@ const swaggerSpec = {
             "type": "integer",
             "example": 1878
           },
-          "available": {
-            "type": "boolean",
-            "example": true
-          },
           "authorId": {
             "type": "integer",
             "example": 1
@@ -2270,12 +2265,6 @@ const swaggerSpec = {
             "type": "integer",
             "example": 1899,
             "description": "Ano de publicação (obrigatório)"
-          },
-          "available": {
-            "type": "boolean",
-            "default": true,
-            "example": false,
-            "description": "Disponível (padrão true)"
           },
           "categoryId": {
             "type": "integer",

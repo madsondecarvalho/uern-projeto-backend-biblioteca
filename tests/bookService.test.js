@@ -35,7 +35,7 @@ describe('bookService', () => {
   });
 
   it('creates a book', async () => {
-    const payload = { title: 'book', authorId: 1, year: 2024, available: false };
+    const payload = { title: 'book', authorId: 1, year: 2024 };
     jest.spyOn(bookModel, 'addBook').mockResolvedValue({ id: 10, ...payload });
 
     await expect(createBook(payload)).resolves.toEqual({ id: 10, ...payload });
@@ -43,7 +43,7 @@ describe('bookService', () => {
   });
 
   it('updates a book when present', async () => {
-    const payload = { title: 'book', authorId: 1, year: 2023, available: true };
+    const payload = { title: 'book', authorId: 1, year: 2023 };
     jest.spyOn(bookModel, 'updateBook').mockResolvedValue({ id: 1, ...payload });
 
     await expect(replaceBook(1, payload)).resolves.toEqual({ id: 1, ...payload });
@@ -57,7 +57,7 @@ describe('bookService', () => {
     await expect(replaceBook(1, { title: 'book', authorId: 1, year: 2023 })).rejects.toThrow('Livro não encontrado');
   });
 
-  it('removes a book when available', async () => {
+  it('removes a book when found', async () => {
     jest.spyOn(bookModel, 'removeBook').mockResolvedValue(true);
 
     await expect(deleteBook(1)).resolves.toBeUndefined();

@@ -53,7 +53,7 @@ describe('bookController', () => {
   });
 
   it('creates a book and returns 201', async () => {
-    const body = { title: 'book', authorId: 1, year: 2024, available: true };
+    const body = { title: 'book', authorId: 1, year: 2024 };
     const req = { body };
     const res = response();
     jest.spyOn(bookService, 'createBook').mockResolvedValue({ ...body, id: 1 });
@@ -65,7 +65,7 @@ describe('bookController', () => {
   });
 
   it('replaces a book', async () => {
-    const req = { params: { id: '1' }, body: { title: 'book', authorId: 1, year: 2024, available: true } };
+    const req = { params: { id: '1' }, body: { title: 'book', authorId: 1, year: 2024 } };
     const res = response();
     const updated = { ...req.body, id: 1 };
     jest.spyOn(bookService, 'replaceBook').mockResolvedValue(updated);
