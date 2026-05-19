@@ -40,9 +40,8 @@ services:
         while ! timeout 1 bash -c 'cat < /dev/null > /dev/tcp/mysql/3306' 2>/dev/null; do
           sleep 1
         done &&
-        echo 'MySQL pronto. Executando migrations e seeds...' &&
+        echo 'MySQL pronto. Executando migrations...' &&
         npx sequelize-cli db:migrate &&
-        npx sequelize-cli db:seed:all &&
         echo 'Iniciando API...' &&
         node server.js
       "
