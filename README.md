@@ -29,17 +29,44 @@ A documentação completa da API com endpoints, schemas, exemplos curl e diagram
 
 ## Pré-requisitos
 - Node.js 22 (recomendado) com npm.
+- Docker e Docker Compose (para execução com banco PostgreSQL).
 
 ## Instalação
+
+### Local (sem Docker)
 ```bash
 npm install
 ```
 
+### Com Docker Compose (recomendado)
+Sobe a aplicação e o banco PostgreSQL em containers:
+
+```bash
+docker compose up -d
+```
+
+A API ficará disponível em `http://localhost:3333`.
+
+Para parar os containers:
+
+```bash
+docker compose down
+```
+
+Para remover também o volume do banco:
+
+```bash
+docker compose down -v
+```
+
 ## Execução
-- Inicie o servidor em modo normal:
-  ```bash
-  npm start
-  ```
+
+### Local (sem Docker)
+Certifique-se de ter um PostgreSQL rodando e as variáveis de ambiente configuradas (veja `.env`), então inicie o servidor:
+
+```bash
+npm start
+```
 
 ## Testes
 - Execute os testes unitários com:
