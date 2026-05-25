@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import sequelize from './src/config/database.js';
 import swaggerSpec from './src/config/swagger.js';
@@ -14,6 +15,7 @@ const app = express();
 const PORT = Number(process.env.PORT) || 3333;
 
 app.use(express.json());
+app.use(cors());
 
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api', authRoutes);
