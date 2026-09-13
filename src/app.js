@@ -10,7 +10,6 @@ import copyRoutes from './routes/copyRoutes.js';
 import reservationRoutes from './routes/reservationRoutes.js';
 
 const app = express();
-const API_URL = process.env.API_URL || 'http://localhost:3333/api';
 
 app.set('trust proxy', 1);
 app.use(express.json());
@@ -41,7 +40,12 @@ app.get('/', (req, res) => {
 app.get('/api/docs.json', (req, res) => {
   res.json({
     ...swaggerSpec,
-    servers: [{ url: API_URL, description: 'Servidor' }],
+    // Servidor RELATIVO de propósito: o "Try it out" sempre chama a mesma
+    // origem da página de docs. Com URL absoluta (ex.: API_URL da produção),
+    // abrir o Swagger de um preview gerava cross-origin e erro de CORS —
+    // que nenhuma entrada em FRONTEND_URLS resolveria de forma estável,
+    // pois a URL de preview muda a cada deploy.
+    servers: [{ url: '/api', description: 'Esta API' }],
   });
 });
 
