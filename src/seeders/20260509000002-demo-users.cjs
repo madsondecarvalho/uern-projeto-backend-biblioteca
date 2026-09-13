@@ -1,4 +1,4 @@
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 const USERS = [
   { name: 'Admin', email: 'admin@biblioteca.com', password: 'admin123', role: 'admin' },

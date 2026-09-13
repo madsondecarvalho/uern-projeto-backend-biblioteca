@@ -1,10 +1,10 @@
 import { jest } from '@jest/globals';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import * as userModel from '../src/models/userModel.js';
 import { listUsers, getUserById, createUser, replaceUser, deleteUser, ServiceError } from '../src/services/userService.js';
 
-jest.mock('bcrypt');
+jest.mock('bcryptjs');
 jest.mock('jsonwebtoken');
 
 describe('userService', () => {
