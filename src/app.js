@@ -14,7 +14,23 @@ const API_URL = process.env.API_URL || 'http://localhost:3333/api';
 
 app.set('trust proxy', 1);
 app.use(express.json());
-app.use(cors());
+// Libera o front (ex: https://biblioteca-frontend-projeto-uern.vercel.app).
+// ATENÇÃO: no CORS vale só o origin (protocolo + host), sem caminho (/login).
+// Defina FRONTEND_URLS na Vercel com os origins separados por vírgula.
+// Sem a variável, fica aberto (útil no desenvolvimento local).
+const FRONTEND_URLS = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+app.use(
+  cors({
+    origin: FRONTEND_URLS.length > 0 ? FRONTEND_URLS : true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: false, // auth via header Bearer (JWT), sem cookies
+    maxAge: 86400, // cache do preflight por 24h (menos invocações na Vercel)
+  })
+);
 
 app.get('/', (req, res) => {
   res.json({ status: 'ok', message: 'Biblioteca API rodando. Docs em /api/docs' });
