@@ -1,5 +1,7 @@
 # Biblioteca API (UERN)
 
+[![CI](https://github.com/madsondecarvalho/uern-projeto-backend-biblioteca/actions/workflows/ci.yml/badge.svg)](https://github.com/madsondecarvalho/uern-projeto-backend-biblioteca/actions/workflows/ci.yml)
+
 Projeto final da disciplina **DSI0015 — Desenvolvimento Web Back-End** do curso de **Sistemas para Internet** da **UERN**.
 
 **Aluno:** Madson Gustavo Fagundes Pinto de Carvalho
@@ -26,6 +28,7 @@ A documentação completa da API com endpoints, schemas, exemplos curl e diagram
 - [Reservas](docs/reservations.md) — Fluxo completo
 - [Usuários e Roles](docs/users.md)
 - [Health Check](docs/health.md)
+- [CI/CD](docs/ci.md)
 - [Diagrama de Classes](docs/class-diagram.md)
 
 ## Pré-requisitos
@@ -74,6 +77,40 @@ npm start
   ```bash
   npm test
   ```
+- A versão usada no CI (com cobertura) é:
+  ```bash
+  npm run test:ci
+  ```
+
+## CI/CD (GitHub Actions + Render)
+
+O pipeline está em [`.github/workflows/ci.yml`](.github/workflows/ci.yml) e roda em pushes na `main`, pull requests e execução manual (`workflow_dispatch`). A documentação detalhada está em [`docs/ci.md`](docs/ci.md).
+
+| Job | O que faz |
+|-----|-----------|
+| `Testes unitários` | `npm ci` + Jest com cobertura; publica o artefato `coverage` |
+| `Build` | instala só dependências de produção (`npm ci --omit=dev`) e valida o carregamento da aplicação com `npm run build` |
+| `Smoke test` | sobe um PostgreSQL 16, roda as migrations, inicia a API e valida `GET /api/health` |
+| `Deploy no Render` | em push na `main`, dispara o deploy hook — somente se o secret existir |
+
+A versão do Node é fixada em `.nvmrc` (22) e usada pelo CI e pelo Render.
+
+### Configuração no Render
+
+- **Build Command:** `npm ci && npm run build`
+- **Start Command:** `npm start`
+- **Health Check Path:** `/api/health`
+- **Node:** definido pelo `.nvmrc` (22)
+
+### Deploy controlado pelo CI (opcional)
+
+Por padrão, o Render faz deploy automático a cada push na branch conectada. Para o deploy só acontecer depois que testes, build e smoke test passarem:
+
+1. No Render, abra **Settings → Deploy Hook** e copie a URL.
+2. Desabilite o **Auto-Deploy** do serviço.
+3. No GitHub, em **Settings → Secrets and variables → Actions**, crie o secret `RENDER_DEPLOY_HOOK_URL` com a URL copiada.
+
+Sem esse secret, o job de deploy apenas registra um aviso e não falha. Se o Auto-Deploy continuar habilitado, não configure o secret — caso contrário o Render fará dois deploys por push.
 
 ## Notas rápidas
 - A API segue ESM (`"type": "module"`) e usa o `babel-jest` para transformar os testes com Jest.

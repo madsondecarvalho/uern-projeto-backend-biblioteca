@@ -12,6 +12,7 @@ API REST para gerenciamento de biblioteca com CRUD de livros, autores, categoria
 - [Reservas](reservations.md)
 - [Usuários e Roles](users.md)
 - [Health Check](health.md)
+- [CI/CD](ci.md)
 
 ## Informações Gerais
 

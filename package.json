@@ -5,13 +5,18 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "build": "node scripts/build-check.js",
     "migrate": "dotenv -e .env -- npx sequelize-cli db:migrate",
     "seed": "dotenv -e .env -- npx sequelize-cli db:seed:all",
-    "test": "jest"
+    "test": "jest",
+    "test:ci": "jest --runInBand --coverage"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "engines": {
+    "node": ">=22"
+  },
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",

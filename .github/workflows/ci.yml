@@ -1,0 +1,155 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Testes unitários
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Executar testes com cobertura
+        run: npm run test:ci
+
+      - name: Publicar cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # Instala apenas dependências de produção, como o Render faria.
+      - name: Instalar dependências de produção
+        run: npm ci --omit=dev
+
+      # API Express não tem bundler: o "build" valida que a aplicação carrega
+      # (rotas, controllers, services, models e configurações) sem erros.
+      - name: Validar carregamento da aplicação
+        run: npm run build
+
+  smoke:
+    name: Smoke test (API + PostgreSQL)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: test
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: biblioteca_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d biblioteca_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_NAME: biblioteca_ci
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_SSL: 'false'
+      JWT_SECRET: ci-secret
+      NODE_ENV: test
+      PORT: 3333
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Rodar migrations
+        run: npx sequelize-cli db:migrate
+
+      - name: Subir a API e validar o health check
+        run: |
+          node server.js > server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:3333/api/health > health.json; then
+              echo "Health check OK:"
+              cat health.json
+              exit 0
+            fi
+            echo "Tentativa $attempt/30: API ainda não respondeu..."
+            sleep 1
+          done
+
+          echo "Health check não respondeu com 200. Log da API:"
+          cat server.log
+          exit 1
+
+  deploy:
+    name: Deploy no Render
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [test, build, smoke]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      # Opcional: só executa de fato se o secret estiver configurado.
+      # Para o CI controlar o deploy, desabilite o Auto-Deploy no Render.
+      - name: Disparar deploy hook
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "::notice::Secret RENDER_DEPLOY_HOOK_URL não configurado; deploy pelo Actions ignorado."
+            exit 0
+          fi
+
+          curl --fail --silent --show-error --retry 3 --retry-delay 5 \
+            --request POST "$RENDER_DEPLOY_HOOK_URL"
+          echo "Deploy disparado no Render."
