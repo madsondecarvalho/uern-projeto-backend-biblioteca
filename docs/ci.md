@@ -10,7 +10,7 @@ O pipeline está definido em [`.github/workflows/ci.yml`](../.github/workflows/c
 |--------|-----------------|
 | `push` | Apenas na branch `main` |
 | `pull_request` | Ao abrir ou atualizar um pull request |
-| `workflow_dispatch` | Execução manual pela aba **Actions** |
+| `workflow_dispatch` | Execução manual pela aba **Actions** (a branch precisa ser `main` para migrations/deploy) |
 
 Uma nova execução no mesmo branch cancela a anterior ainda em andamento (`concurrency`), evitando jobs duplicados.
 
@@ -36,6 +36,11 @@ push na main / pull request
 │ npm run build│                     │
 └──────┬───────┘                     │
        └─────────────┬───────────────┘
+                     ▼
+          ┌─────────────────────┐
+          │ Migrate & seed      │  push main / manual
+          │ Turso (secrets)     │
+          └──────────┬──────────┘
                      ▼
           ┌─────────────────────┐
           │ Deploy no Render    │  somente push na main
@@ -113,17 +118,45 @@ Variáveis usadas no job:
 
 Esse job também depende do sucesso dos testes unitários e de integração.
 
-### 5. Deploy no Render
+### 5. Migrate & seed (Turso)
 
-Roda somente em **push para a `main`**, depois que testes unitários, testes de integração, build e smoke test passarem.
+Roda em **push para a `main`** e em execução manual na `main`. Usa os secrets do repositório:
+
+- `TURSO_DATABASE_URL`
+- `TURSO_AUTH_TOKEN`
+
+Passos:
+
+1. Verifica se os dois secrets existem. Se faltar algum, registra um aviso e ignora a etapa (o deploy também fica bloqueado).
+2. `npm ci`
+3. `npm run db:migrate`
+4. `npm run db:seed` — idempotente; em execução manual pode ser desmarcado pelo input `seed`
+5. `npm run db:check` — confirma que todas as tabelas obrigatórias existem
+
+Esse job depende dos testes unitários e de integração.
+
+### 6. Deploy no Render
+
+Roda somente em **push para a `main`**, depois que testes unitários, testes de integração, build, smoke test e migrations passarem.
 
 O job envia um `POST` para o **Deploy Hook** do Render, cuja URL fica no secret `RENDER_DEPLOY_HOOK_URL` do GitHub.
 
 Se o secret não estiver configurado, o job **não falha**: registra um aviso e termina com sucesso. Assim, é possível manter o Auto-Deploy do Render ligado sem duplicar deploys.
 
-> A execução manual (`workflow_dispatch`) não dispara o deploy, pois o job exige `github.event_name == 'push'`.
+> A execução manual (`workflow_dispatch`) não dispara o deploy, pois o job exige `github.event_name == 'push'`. Ela serve para rodar migrations/seed sob demanda.
 
 ## Configuração no GitHub
+
+### Secrets do Turso
+
+Em **Settings → Secrets and variables → Actions**, crie:
+
+| Secret | Valor |
+|--------|-------|
+| `TURSO_DATABASE_URL` | `libsql://seu-banco-sua-org.turso.io` |
+| `TURSO_AUTH_TOKEN` | token de leitura/escrita do banco |
+
+Eles são usados pelo job **Migrate & seed (Turso)**. Sem eles, o job avisa e ignora a etapa, e o deploy não é disparado pelo Actions.
 
 ### Secret do deploy hook
 
@@ -162,12 +195,13 @@ Assim nenhum PR é mesclado com teste quebrado.
 | **Node** | definido pelo [`.nvmrc`](../.nvmrc) (22) |
 | **Variáveis** | `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `JWT_SECRET` (e `FRONTEND_URLS` se necessário) |
 
-Depois de configurar o banco, rode as migrations uma vez contra o Turso:
+O job de CI já aplica as migrations no Turso antes do deploy. Para rodar manualmente:
 
 ```bash
 npm run db:migrate
 # opcional: dados de demonstração
 npm run db:seed
+npm run db:check
 ```
 
 ### Auto-Deploy × Deploy Hook
@@ -197,6 +231,7 @@ npm ci
 npm run test:unit
 npm run test:integration
 npm run build
+npm run db:check
 ```
 
 Smoke test local com SQLite:
@@ -223,6 +258,8 @@ TURSO_AUTH_TOKEN=seu-token
 | Sintoma | Causa provável | Solução |
 |---------|----------------|---------|
 | `TURSO_DATABASE_URL não configurada` | Variável ausente em produção | Cadastre a URL em **Settings → Environment Variables** |
+| Job de migrations com aviso | Secrets do Turso ausentes no GitHub | Cadastre `TURSO_DATABASE_URL` e `TURSO_AUTH_TOKEN` em **Actions secrets** |
+| Tabelas continuam ausentes após o CI | Job de migrations não rodou ou falhou | Confira o log de **Migrate & seed (Turso)** e rode o workflow manualmente |
 | `401`/`403` ao acessar o Turso | `TURSO_AUTH_TOKEN` ausente ou inválido | Gere um novo token no Turso e atualize a variável |
 | `no such table` | Schema não aplicado | Rode `npm run db:migrate` |
 | `/api/health` retorna `503` | API no ar, banco indisponível | Verifique URL, token e migrations |

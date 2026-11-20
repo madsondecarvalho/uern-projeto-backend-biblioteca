@@ -33,6 +33,7 @@ Os scripts usam SQL parametrizado e são idempotentes:
 npm run db:migrate   # cria tabelas e índices que ainda não existem
 npm run db:seed      # insere dados de demonstração se o banco estiver vazio
 npm run db:setup     # db:migrate + db:seed
+npm run db:check     # lista as tabelas e a quantidade de registros
 ```
 
 Para aplicar no Turso, rode com as variáveis de ambiente configuradas:
@@ -55,6 +56,18 @@ No Windows/PowerShell, defina com `$env:TURSO_DATABASE_URL='...'` antes do coman
 | `Reservations` | Reservas, com status e janela de 24h |
 
 O schema completo está em [`scripts/db/schema.js`](../scripts/db/schema.js).
+
+## Migrations e seed no CI
+
+O job **Migrate & seed (Turso)** do GitHub Actions roda em push na `main` e manualmente (`workflow_dispatch`):
+
+- usa os secrets `TURSO_DATABASE_URL` e `TURSO_AUTH_TOKEN`;
+- aplica `npm run db:migrate`;
+- executa `npm run db:seed` (idempotente; pode ser desmarcado no input `seed`);
+- valida com `npm run db:check`;
+- o deploy no Render só acontece depois desse job.
+
+Se os secrets ainda não estiverem configurados, o job registra um aviso e é ignorado. Configure em **Settings → Secrets and variables → Actions**.
 
 ## Migração de dados do PostgreSQL
 

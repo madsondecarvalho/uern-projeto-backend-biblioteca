@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      seed:
+        description: Rodar o seed após as migrations
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -63,6 +68,62 @@ jobs:
       # Usa SQLite em memória e exercita a camada real de models/CRUD.
       - name: Executar testes de integração
         run: npm run test:integration
+
+  migrate:
+    name: Migrate & seed (Turso)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [unit, integration]
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    outputs:
+      configured: ${{ steps.check.outputs.configured }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Verificar secrets do Turso
+        id: check
+        env:
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: |
+          if [ -z "$TURSO_DATABASE_URL" ] || [ -z "$TURSO_AUTH_TOKEN" ]; then
+            echo "::warning::Secrets TURSO_DATABASE_URL/TURSO_AUTH_TOKEN não configurados; migration/seed ignorados."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Instalar dependências
+        if: steps.check.outputs.configured == 'true'
+        run: npm ci
+
+      - name: Aplicar migrations
+        if: steps.check.outputs.configured == 'true'
+        env:
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: npm run db:migrate
+
+      - name: Aplicar seed (idempotente)
+        if: steps.check.outputs.configured == 'true' && (github.event_name != 'workflow_dispatch' || inputs.seed)
+        env:
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: npm run db:seed
+
+      - name: Validar tabelas criadas
+        if: steps.check.outputs.configured == 'true'
+        env:
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: npm run db:check
 
   build:
     name: Build
@@ -150,8 +211,8 @@ jobs:
     name: Deploy no Render
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [unit, integration, build, smoke]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [unit, integration, build, smoke, migrate]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.migrate.outputs.configured == 'true'
     steps:
       # Opcional: só executa de fato se o secret estiver configurado.
       # Para o CI controlar o deploy, desabilite o Auto-Deploy no Render.

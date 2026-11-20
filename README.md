@@ -122,11 +122,23 @@ O pipeline está em [`.github/workflows/ci.yml`](.github/workflows/ci.yml) e rod
 |-----|-----------|
 | `Testes unitários` | `npm ci` + Jest com cobertura (sem os testes de integração); publica o artefato `coverage` |
 | `Testes de integração` | Jest nos models com SQLite em memória |
+| `Migrate & seed` | aplica schema e seed idempotente no Turso usando os secrets do repositório; valida as tabelas |
 | `Build` | instala só dependências de produção (`npm ci --omit=dev`) e valida o carregamento da aplicação com `npm run build` |
 | `Smoke test` | aplica schema/seed em SQLite local, inicia a API e valida health + fluxo de livros, login, usuários, cópias e reservas |
-| `Deploy no Render` | em push na `main`, dispara o deploy hook — somente se o secret existir |
+| `Deploy no Render` | em push na `main`, dispara o deploy hook — somente após migrations e se o secret existir |
 
 A versão do Node é fixada em `.nvmrc` (22) e usada pelo CI e pelo Render.
+
+### Migrations e seeds no CI
+
+O job `Migrate & seed (Turso)` roda em push na `main` e também manualmente (`workflow_dispatch`), usando os secrets:
+
+- `TURSO_DATABASE_URL`
+- `TURSO_AUTH_TOKEN`
+
+Ele aplica `npm run db:migrate`, executa `npm run db:seed` (idempotente) e valida as tabelas com `npm run db:check`. O deploy no Render depende desse job.
+
+Para rodar manualmente: **Actions → CI → Run workflow** na branch `main`. O input `seed` permite desmarcar o seed quando quiser apenas migrations.
 
 ### Configuração no Render
 
