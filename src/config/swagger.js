@@ -2208,7 +2208,7 @@ const swaggerSpec = {
           "Health"
         ],
         "summary": "Health check",
-        "description": "Verifica se a API está no ar e se o PostgreSQL responde. Retorna 503 quando o banco está indisponível.",
+        "description": "Verifica se a API está no ar e se o Turso/libSQL responde. Retorna 503 quando o banco está indisponível.",
         "responses": {
           "200": {
             "description": "API e banco operacionais",

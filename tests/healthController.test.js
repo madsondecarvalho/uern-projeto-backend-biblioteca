@@ -2,10 +2,10 @@ import { jest } from '@jest/globals';
 
 jest.mock('../src/config/database.js', () => ({
   __esModule: true,
-  default: { authenticate: jest.fn() },
+  pingDatabase: jest.fn(),
 }));
 
-import sequelize from '../src/config/database.js';
+import { pingDatabase } from '../src/config/database.js';
 import { healthCheck } from '../src/controllers/healthController.js';
 
 const response = () => {
@@ -30,11 +30,11 @@ describe('healthController', () => {
 
   it('returns 200 and database up when the connection succeeds', async () => {
     const res = response();
-    sequelize.authenticate.mockResolvedValue(undefined);
+    pingDatabase.mockResolvedValue(undefined);
 
     await healthCheck({}, res);
 
-    expect(sequelize.authenticate).toHaveBeenCalledTimes(1);
+    expect(pingDatabase).toHaveBeenCalledTimes(1);
     expect(res.set).toHaveBeenCalledWith('Cache-Control', 'no-store');
     expect(res.status).not.toHaveBeenCalled();
     expect(res.json).toHaveBeenCalledWith(
@@ -44,7 +44,7 @@ describe('healthController', () => {
 
   it('includes a valid uptime and ISO timestamp in the response', async () => {
     const res = response();
-    sequelize.authenticate.mockResolvedValue(undefined);
+    pingDatabase.mockResolvedValue(undefined);
 
     await healthCheck({}, res);
 
@@ -56,7 +56,7 @@ describe('healthController', () => {
 
   it('returns 503 and database down when the connection fails', async () => {
     const res = response();
-    sequelize.authenticate.mockRejectedValue(new Error('connection refused'));
+    pingDatabase.mockRejectedValue(new Error('connection refused'));
 
     await healthCheck({}, res);
 
@@ -69,20 +69,20 @@ describe('healthController', () => {
 
   it('does not expose internal error details in the response', async () => {
     const res = response();
-    sequelize.authenticate.mockRejectedValue(
-      new Error('password authentication failed for user "postgres"')
+    pingDatabase.mockRejectedValue(
+      new Error('auth token invalid for organization minha-org')
     );
 
     await healthCheck({}, res);
 
-    expect(JSON.stringify(responseBody(res))).not.toContain('password');
-    expect(JSON.stringify(responseBody(res))).not.toContain('postgres');
+    expect(JSON.stringify(responseBody(res))).not.toContain('auth token');
+    expect(JSON.stringify(responseBody(res))).not.toContain('minha-org');
   });
 
   it('logs the database failure reason', async () => {
     const res = response();
     const error = new Error('connection refused');
-    sequelize.authenticate.mockRejectedValue(error);
+    pingDatabase.mockRejectedValue(error);
 
     await healthCheck({}, res);
 
@@ -90,17 +90,17 @@ describe('healthController', () => {
   });
 
   it('checks the database on every request', async () => {
-    sequelize.authenticate.mockResolvedValue(undefined);
+    pingDatabase.mockResolvedValue(undefined);
 
     await healthCheck({}, response());
     await healthCheck({}, response());
 
-    expect(sequelize.authenticate).toHaveBeenCalledTimes(2);
+    expect(pingDatabase).toHaveBeenCalledTimes(2);
   });
 
   it('resolves without throwing when the database is unavailable', async () => {
     const res = response();
-    sequelize.authenticate.mockRejectedValue(new Error('timeout'));
+    pingDatabase.mockRejectedValue(new Error('timeout'));
 
     await expect(healthCheck({}, res)).resolves.toBe(res);
   });

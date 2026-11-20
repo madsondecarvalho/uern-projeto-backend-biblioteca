@@ -19,7 +19,6 @@ CRUD de livros. A listagem aceita filtros e paginação.
   "id": 1,
   "title": "Dom Casmurro",
   "year": 1899,
-  "available": false,
   "authorId": 2,
   "Author": { "id": 2, "name": "Machado de Assis" },
   "categoryId": 2,
@@ -73,7 +72,6 @@ curl http://localhost:3333/api/books/1
   "id": 1,
   "title": "O Primo Basílio",
   "year": 1878,
-  "available": true,
   "authorId": 1,
   "Author": { "id": 1, "name": "José Maria de Eça de Queirós" },
   "categoryId": 1,
@@ -90,7 +88,6 @@ curl -X POST http://localhost:3333/api/books \
     "title": "Novo Livro",
     "authorId": 2,
     "year": 2024,
-    "available": true,
     "categoryId": 1
   }'
 ```
@@ -104,7 +101,6 @@ curl -X PUT http://localhost:3333/api/books/1 \
     "title": "Título Alterado",
     "authorId": 2,
     "year": 2000,
-    "available": false,
     "categoryId": 2
   }'
 ```

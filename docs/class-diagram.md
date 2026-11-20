@@ -3,16 +3,16 @@
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                           BIBLIOTECA API                                    │
-│                     Diagrama de Classes (Sequelize)                         │
+│                     Diagrama de Classes (Turso/libSQL)                       │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────┐       ┌──────────────────────────────┐
 │           Author             │       │          Category           │
 │──────────────────────────────│       │──────────────────────────────│
 │  id: INTEGER (PK)           │       │  id: INTEGER (PK)           │
-│  name: STRING(255) (UNIQUE) │       │  name: STRING(100) (UNIQUE) │
-│  createdAt: DATE            │       │  createdAt: DATE            │
-│  updatedAt: DATE            │       │  updatedAt: DATE            │
+│  name: TEXT (UNIQUE)        │       │  name: TEXT (UNIQUE)        │
+│  createdAt: TEXT            │       │  createdAt: TEXT            │
+│  updatedAt: TEXT            │       │  updatedAt: TEXT            │
 ├──────────────────────────────┤       ├──────────────────────────────┤
 │  + hasMany: Book            │       │  + hasMany: Book            │
 └──────────┬───────────────────┘       └──────────┬───────────────────┘
@@ -25,13 +25,12 @@
 │                                  Book                                      │
 │────────────────────────────────────────────────────────────────────────────│
 │  id: INTEGER (PK)                                                         │
-│  title: STRING(255) (NOT NULL)                                            │
+│  title: TEXT (NOT NULL)                                                   │
 │  year: INTEGER (NOT NULL)                                                 │
-│  available: BOOLEAN (default: true)                                       │
 │  authorId: INTEGER (FK → Author) (NOT NULL)                               │
 │  categoryId: INTEGER (FK → Category) (NULLABLE)                           │
-│  createdAt: DATE                                                          │
-│  updatedAt: DATE                                                          │
+│  createdAt: TEXT                                                          │
+│  updatedAt: TEXT                                                          │
 ├────────────────────────────────────────────────────────────────────────────┤
 │  + belongsTo: Author                                                      │
 │  + belongsTo: Category                                                    │
@@ -45,11 +44,11 @@
 │                                  Copy                                      │
 │────────────────────────────────────────────────────────────────────────────│
 │  id: INTEGER (PK)                                                         │
-│  code: STRING(50) (UNIQUE, NOT NULL)   ← Código de barras / tombo        │
-│  status: ENUM (AVAILABLE | BORROWED | MAINTENANCE | LOST | RESERVED)     │
+│  code: TEXT (UNIQUE, NOT NULL)         ← Código de barras / tombo        │
+│  status: TEXT CHECK (AVAILABLE | BORROWED | MAINTENANCE | LOST | RESERVED)│
 │  bookId: INTEGER (FK → Book) (NOT NULL)                                   │
-│  createdAt: DATE                                                          │
-│  updatedAt: DATE                                                          │
+│  createdAt: TEXT                                                          │
+│  updatedAt: TEXT                                                          │
 ├────────────────────────────────────────────────────────────────────────────┤
 │  + belongsTo: Book                                                        │
 │  + hasMany: Reservation                                                   │
@@ -64,13 +63,13 @@
 │  id: INTEGER (PK)                                                         │
 │  userId: INTEGER (FK → User) (NOT NULL)                                   │
 │  copyId: INTEGER (FK → Copy) (NOT NULL)                                   │
-│  status: ENUM (PENDING | PICKED_UP | CANCELLED | EXPIRED)                 │
-│  reservedAt: DATE (NOT NULL)                                              │
-│  expiresAt: DATE (NOT NULL)       ← Expira em 24h após a reserva         │
-│  pickedUpAt: DATE (NULLABLE)      ← Preenchido no PICKED_UP              │
-│  returnedAt: DATE (NULLABLE)      ← Preenchido na devolução              │
-│  createdAt: DATE                                                          │
-│  updatedAt: DATE                                                          │
+│  status: TEXT CHECK (PENDING | PICKED_UP | CANCELLED | EXPIRED)           │
+│  reservedAt: TEXT (NOT NULL)                                              │
+│  expiresAt: TEXT (NOT NULL)       ← Expira em 24h após a reserva         │
+│  pickedUpAt: TEXT (NULLABLE)      ← Preenchido no PICKED_UP              │
+│  returnedAt: TEXT (NULLABLE)      ← Preenchido na devolução              │
+│  createdAt: TEXT                                                          │
+│  updatedAt: TEXT                                                          │
 ├────────────────────────────────────────────────────────────────────────────┤
 │  + belongsTo: Copy                                                        │
 │  + belongsTo: User                                                        │
@@ -82,12 +81,12 @@
 │                                  User                                      │
 │────────────────────────────────────────────────────────────────────────────│
 │  id: INTEGER (PK)                                                         │
-│  name: STRING(255) (NOT NULL)                                             │
-│  email: STRING(255) (UNIQUE, NOT NULL)                                    │
-│  password: STRING(255) (NOT NULL)   ← Excluída do defaultScope           │
-│  role: ENUM (user | admin) (default: user)                                │
-│  createdAt: DATE                                                          │
-│  updatedAt: DATE                                                          │
+│  name: TEXT (NOT NULL)                                                    │
+│  email: TEXT (UNIQUE, NOT NULL)                                           │
+│  password: TEXT (NOT NULL)   ← Omitida nas consultas públicas             │
+│  role: TEXT (user | admin) (default: user)                                │
+│  createdAt: TEXT                                                          │
+│  updatedAt: TEXT                                                          │
 ├────────────────────────────────────────────────────────────────────────────┤
 │  + hasMany: Reservation                                                   │
 └────────────────────────────────────────────────────────────────────────────┘

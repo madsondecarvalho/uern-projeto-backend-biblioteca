@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  unit:
     name: Testes unitários
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -31,8 +31,8 @@ jobs:
       - name: Instalar dependências
         run: npm ci
 
-      - name: Executar testes com cobertura
-        run: npm run test:ci
+      - name: Executar testes unitários
+        run: npm run test:unit
 
       - name: Publicar cobertura
         if: always()
@@ -43,11 +43,32 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  integration:
+    name: Testes de integração
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      # Usa SQLite em memória e exercita a camada real de models/CRUD.
+      - name: Executar testes de integração
+        run: npm run test:integration
+
   build:
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: test
+    needs: [unit, integration]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -68,34 +89,15 @@ jobs:
         run: npm run build
 
   smoke:
-    name: Smoke test (API + PostgreSQL)
+    name: Smoke test (API + Turso local)
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: test
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_DB: biblioteca_ci
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d biblioteca_ci"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
+    needs: [unit, integration]
     env:
-      DB_HOST: 127.0.0.1
-      DB_PORT: 5432
-      DB_NAME: biblioteca_ci
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_SSL: 'false'
+      TURSO_DATABASE_URL: 'file:./ci.db'
       JWT_SECRET: ci-secret
       NODE_ENV: test
-      PORT: 3333
+      PORT: '3333'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -109,34 +111,46 @@ jobs:
       - name: Instalar dependências
         run: npm ci
 
-      - name: Rodar migrations
-        run: npx sequelize-cli db:migrate
+      - name: Aplicar schema e seed
+        run: npm run db:setup
 
-      - name: Subir a API e validar o health check
+      - name: Subir a API e validar o fluxo principal
         run: |
           node server.js > server.log 2>&1 &
           SERVER_PID=$!
-          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+
+          cleanup() {
+            status=$?
+            if [ "$status" -ne 0 ]; then
+              echo "Log da API:"
+              cat server.log
+            fi
+            kill "$SERVER_PID" 2>/dev/null || true
+            exit "$status"
+          }
+          trap cleanup EXIT
 
           for attempt in $(seq 1 30); do
             if curl --fail --silent --show-error http://127.0.0.1:3333/api/health > health.json; then
               echo "Health check OK:"
               cat health.json
-              exit 0
+              break
             fi
             echo "Tentativa $attempt/30: API ainda não respondeu..."
             sleep 1
+            if [ "$attempt" -eq 30 ]; then
+              echo "API não respondeu a tempo."
+              exit 1
+            fi
           done
 
-          echo "Health check não respondeu com 200. Log da API:"
-          cat server.log
-          exit 1
+          npm run smoke
 
   deploy:
     name: Deploy no Render
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [test, build, smoke]
+    needs: [unit, integration, build, smoke]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       # Opcional: só executa de fato se o secret estiver configurado.

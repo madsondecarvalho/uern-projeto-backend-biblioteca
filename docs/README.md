@@ -12,6 +12,7 @@ API REST para gerenciamento de biblioteca com CRUD de livros, autores, categoria
 - [Reservas](reservations.md)
 - [Usuários e Roles](users.md)
 - [Health Check](health.md)
+- [Banco de dados (Turso)](database.md)
 - [CI/CD](ci.md)
 
 ## Informações Gerais
@@ -20,6 +21,7 @@ API REST para gerenciamento de biblioteca com CRUD de livros, autores, categoria
 |------|---------|
 | Base URL | `http://localhost:3333/api` |
 | Swagger UI | `http://localhost:3333/api/docs` |
+| Banco | Turso (libSQL/SQLite) |
 | Formato | JSON |
 | Autenticação | JWT (Bearer token) |
 

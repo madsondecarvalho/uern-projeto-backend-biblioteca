@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import * as userModel from '../models/userModel.js';
+import { isUniqueConstraintError } from '../models/dbHelpers.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'biblioteca-secret';
 
@@ -64,7 +65,14 @@ export const createUser = async (payload) => {
 
   const hashed = await hashPassword(payload.password);
 
-  return userModel.addUser({ ...payload, password: hashed });
+  try {
+    return await userModel.addUser({ ...payload, password: hashed });
+  } catch (err) {
+    if (isUniqueConstraintError(err)) {
+      throw new ServiceError('Email já cadastrado', 409);
+    }
+    throw err;
+  }
 };
 
 export const replaceUser = async (id, payload) => {
@@ -88,7 +96,14 @@ export const replaceUser = async (id, payload) => {
     data.password = await hashPassword(data.password);
   }
 
-  return userModel.updateUser(id, data);
+  try {
+    return await userModel.updateUser(id, data);
+  } catch (err) {
+    if (isUniqueConstraintError(err)) {
+      throw new ServiceError('Email já cadastrado', 409);
+    }
+    throw err;
+  }
 };
 
 export const deleteUser = async (id) => {

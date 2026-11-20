@@ -1,6 +1,6 @@
 # Health Check
 
-Verifica se a API está no ar e se o PostgreSQL está respondendo. Não exige autenticação.
+Verifica se a API está no ar e se o banco Turso/libSQL está respondendo. Não exige autenticação.
 
 ```
 GET /api/health
@@ -31,7 +31,7 @@ GET /api/health
 | Campo | Descrição |
 |-------|-----------|
 | `status` | `ok` quando o banco responde; `degraded` quando não responde |
-| `database` | Estado da conexão com o PostgreSQL (`up` ou `down`) |
+| `database` | Estado da conexão com o Turso/libSQL (`up` ou `down`) |
 | `uptime` | Tempo de atividade do processo em segundos |
 | `timestamp` | Momento da verificação (ISO 8601) |
 

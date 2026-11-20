@@ -1,5 +1,5 @@
 import app from '../src/app.js';
-import sequelize from '../src/config/database.js';
+import { pingDatabase } from '../src/config/database.js';
 
 // Duração máxima da function (plano hobby: máx. 10s).
 export const maxDuration = 10;
@@ -28,17 +28,18 @@ const DB_TIMEOUT_MS = Number(process.env.DB_CONNECT_TIMEOUT_MS) || 8000;
 
 async function ensureDb() {
   if (!dbReady) {
-    const hasDbConfig = !!process.env.DATABASE_URL || !!process.env.DB_HOST;
-    if (!hasDbConfig) {
+    const hasDbConfig = !!process.env.TURSO_DATABASE_URL;
+
+    if (!hasDbConfig && process.env.NODE_ENV === 'production') {
       throw new Error(
-        'DATABASE_URL (ou DB_HOST) não configurada na Vercel → Settings → Environment Variables'
+        'TURSO_DATABASE_URL não configurada na Vercel → Settings → Environment Variables'
       );
     }
-    dbReady = sequelize.authenticate().then(() => {
-      console.log('[api] PostgreSQL conectado');
+
+    dbReady = pingDatabase().then(() => {
+      console.log('[api] Turso conectado');
     }).catch((err) => {
-      // NÃO cacheia a falha: banco serverless (Neon free) "dorme" e o primeiro
-      // request após idle falha; a próxima invocação deve tentar de novo.
+      // NÃO cacheia a falha: a próxima invocação deve tentar de novo.
       dbReady = null;
       throw err;
     });
@@ -51,7 +52,7 @@ async function ensureDb() {
       new Promise((_, reject) => {
         timer = setTimeout(() => {
           const err = new Error(
-            `Timeout ao conectar ao banco após ${DB_TIMEOUT_MS}ms — verifique DATABASE_URL (use a URL do pooler), SSL e se o IP da Vercel é aceito`
+            `Timeout ao conectar ao banco após ${DB_TIMEOUT_MS}ms — verifique TURSO_DATABASE_URL e TURSO_AUTH_TOKEN`
           );
           err.code = 'DB_CONNECT_TIMEOUT';
           reject(err);

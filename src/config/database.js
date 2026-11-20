@@ -1,83 +1,29 @@
-import { Sequelize } from 'sequelize';
+import { createClient } from '@libsql/client';
 
-// Imports estáticos intencionais (sem uso direto no código): o Sequelize carrega
-// 'pg'/'pg-hstore' via require() DINÂMICO com nome de variável, que o file-tracer
-// da Vercel (nft) não consegue detectar. Sem estes imports, esses pacotes ficam
-// de fora do bundle e o runtime quebra com "Please install pg package manually".
-import 'pg';
-import 'pg-hstore';
+// Turso fala libSQL (SQLite). Em produção use a URL e o token do banco:
+//   TURSO_DATABASE_URL=libsql://seu-banco-sua-org.turso.io
+//   TURSO_AUTH_TOKEN=...
+// Sem essas variáveis, o desenvolvimento local usa um arquivo SQLite.
+const clean = (value) => (typeof value === 'string' ? value.trim() : value);
 
-// Limpa espaços acidentais ao colar valores do dashboard (causa comum de
-// "getaddrinfo ENOTFOUND" — um espaço/quebra de linha já invalida o host).
-const clean = (v) => (typeof v === 'string' ? v.trim() : v);
+const url =
+  clean(process.env.TURSO_DATABASE_URL) ||
+  'file:./biblioteca.db';
 
-let databaseUrl = clean(process.env.DATABASE_URL);
-let dbHost = clean(process.env.DB_HOST);
+const authToken = clean(process.env.TURSO_AUTH_TOKEN) || undefined;
 
-// Rede de segurança: URL completa colada por engano no campo DB_HOST.
-if (!databaseUrl && dbHost && dbHost.includes('://')) {
-  console.warn('[db] valor de DB_HOST parece uma URL — usando como DATABASE_URL');
-  databaseUrl = dbHost;
-  dbHost = null;
-}
+export const db = createClient({ url, authToken });
 
-// Rede de segurança: "host:porta" colado junto no DB_HOST (ex. "db.prisma.io:5432").
-// O pg resolveria a string inteira como hostname → ENOTFOUND.
-let dbPort = Number(clean(process.env.DB_PORT)) || 5432;
-if (dbHost && !dbHost.includes('://') && dbHost.includes(':') && !dbHost.startsWith('[')) {
-  const idx = dbHost.lastIndexOf(':');
-  const maybePort = Number(dbHost.slice(idx + 1));
-  if (Number.isInteger(maybePort) && maybePort > 0) {
-    console.warn(`[db] separando porta de DB_HOST ("${dbHost}")`);
-    dbPort = maybePort;
-    dbHost = dbHost.slice(0, idx).trim();
-  }
-}
+export const query = (sql, args = []) => db.execute({ sql, args });
 
-const useSSL = process.env.DB_SSL === 'true' || !!databaseUrl;
+export const batch = (statements) => db.batch(statements);
 
-// Pool pequeno + timeouts curtos: em serverless (Vercel) a function morre em ~10s.
-// Sem isso, um host inalcançável trava a function até o timeout da plataforma,
-// que responde com FUNCTION_INVOCATION_FAILED em vez de um JSON de erro.
-const serverlessOptions = {
-  pool: {
-    max: 2, // poucas conexões por instância congelada/descongelada
-    min: 0, // não segura conexão idle (cada uma custa no Postgres)
-    acquire: 8000, // desiste de pegar conexão após 8s
-    idle: 10000, // fecha conexão idle (Neon/Supabase derrubam idle mesmo)
-    evict: 5000,
-  },
-  retry: { max: 1 }, // 1 tentativa: falhar rápido > travar a function
-  dialectOptions: {
-    connectionTimeoutMillis: 8000, // pg: 0 = SEM timeout (nunca use 0 em serverless)
-    ...(useSSL ? { ssl: { require: true, rejectUnauthorized: false } } : {}),
-  },
+export const pingDatabase = async () => {
+  await query('SELECT 1 AS ok');
 };
 
-let sequelize;
+export const closeDatabase = () => db.close();
 
-if (databaseUrl) {
-  // Provedores como Prisma / Neon / Supabase / Render fornecem uma URL única.
-  // Em serverless, prefira a URL do POOLER (Prisma: pooled.db.prisma.io /
-  // Neon: -pooler... / Supabase porta 6543).
-  sequelize = new Sequelize(databaseUrl, {
-    dialect: 'postgres',
-    logging: false,
-    ...serverlessOptions,
-  });
-} else {
-  sequelize = new Sequelize(
-    process.env.DB_NAME || 'biblioteca_dev',
-    process.env.DB_USER || 'postgres',
-    process.env.DB_PASSWORD || null,
-    {
-      host: dbHost || '127.0.0.1',
-      port: dbPort,
-      dialect: 'postgres',
-      logging: false,
-      ...serverlessOptions,
-    }
-  );
-}
+export const isRemoteDatabase = /^(libsql|https?):\/\//i.test(url);
 
-export default sequelize;
+export default db;

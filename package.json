@@ -6,9 +6,15 @@
   "scripts": {
     "start": "node server.js",
     "build": "node scripts/build-check.js",
-    "migrate": "dotenv -e .env -- npx sequelize-cli db:migrate",
-    "seed": "dotenv -e .env -- npx sequelize-cli db:seed:all",
+    "migrate": "node scripts/db/migrate.js",
+    "seed": "node scripts/db/seed.js",
+    "db:migrate": "node scripts/db/migrate.js",
+    "db:seed": "node scripts/db/seed.js",
+    "db:setup": "npm run db:migrate && npm run db:seed",
+    "smoke": "node scripts/smoke.js",
     "test": "jest",
+    "test:unit": "jest --runInBand --coverage --testPathIgnorePatterns=integration.test.js",
+    "test:integration": "jest --runInBand tests/database.integration.test.js",
     "test:ci": "jest --runInBand --coverage"
   },
   "keywords": [],
@@ -18,13 +24,11 @@
     "node": ">=22"
   },
   "dependencies": {
+    "@libsql/client": "^0.18.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
-    "pg": "^8.21.0",
-    "pg-hstore": "^2.3.4",
-    "sequelize": "^6.37.6",
     "zod": "^4.4.3"
   },
   "type": "module",
@@ -32,8 +36,6 @@
     "@babel/core": "^7.29.0",
     "@babel/preset-env": "^7.29.0",
     "babel-jest": "^30.3.0",
-    "dotenv-cli": "^11.0.0",
-    "jest": "^30.3.0",
-    "sequelize-cli": "^6.6.2"
+    "jest": "^30.3.0"
   }
 }

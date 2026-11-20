@@ -1,3 +1,6 @@
 node_modules
 .env
 coverage
+*.db
+*.db-shm
+*.db-wal

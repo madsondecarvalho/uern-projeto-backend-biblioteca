@@ -1,4 +1,5 @@
 import * as copyModel from '../models/copyModel.js';
+import { isUniqueConstraintError } from '../models/dbHelpers.js';
 
 export class ServiceError extends Error {
   constructor(message, status = 500) {
@@ -21,7 +22,7 @@ export const createCopy = async (payload) => {
   try {
     return await copyModel.addCopy(payload);
   } catch (err) {
-    if (err.name === 'SequelizeUniqueConstraintError') {
+    if (isUniqueConstraintError(err)) {
       throw new ServiceError('Código já cadastrado', 409);
     }
     throw err;

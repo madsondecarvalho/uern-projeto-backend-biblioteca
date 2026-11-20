@@ -1,41 +1,75 @@
-import Category from './category.js';
+import { batch, query } from '../config/database.js';
+import {
+  insertRow,
+  nowIso,
+  paginated,
+  parsePagination,
+  toNumber,
+  updateRow,
+} from './dbHelpers.js';
 
-export const listCategories = async (pagination = {}) => {
-  const page = Math.max(1, Number(pagination.page) || 1);
-  const limit = Math.min(100, Math.max(1, Number(pagination.limit) || 10));
-  const offset = (page - 1) * limit;
-
-  const { rows, count } = await Category.findAndCountAll({
-    order: [['name', 'ASC']],
-    limit,
-    offset,
-  });
+const mapCategory = (row) => {
+  if (!row) return null;
 
   return {
-    data: rows,
-    pagination: {
-      page,
-      limit,
-      total: count,
-      totalPages: Math.ceil(count / limit),
-    },
+    id: toNumber(row.id),
+    name: row.name,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
   };
 };
 
-export const findCategory = async (id) => Category.findByPk(id);
+export const listCategories = async (pagination = {}) => {
+  const paging = parsePagination(pagination);
 
-export const addCategory = async (payload) => Category.create(payload);
+  const countResult = await query('SELECT COUNT(*) AS total FROM "Categories"');
+  const total = Number(countResult.rows[0]?.total || 0);
+
+  const result = await query(
+    `SELECT "id", "name", "createdAt", "updatedAt"
+     FROM "Categories" ORDER BY "name" ASC LIMIT ? OFFSET ?`,
+    [paging.limit, paging.offset]
+  );
+
+  return paginated(result.rows.map(mapCategory), paging, total);
+};
+
+export const findCategory = async (id) => {
+  const result = await query(
+    'SELECT "id", "name", "createdAt", "updatedAt" FROM "Categories" WHERE "id" = ?',
+    [id]
+  );
+
+  return mapCategory(result.rows[0]);
+};
+
+export const addCategory = async (payload) => {
+  const createdAt = nowIso();
+  const id = await insertRow('Categories', {
+    name: payload.name,
+    createdAt,
+    updatedAt: createdAt,
+  });
+
+  return { id, name: payload.name, createdAt, updatedAt: createdAt };
+};
 
 export const updateCategory = async (id, updates) => {
-  const [affected] = await Category.update(updates, { where: { id } });
+  const updated = await updateRow('Categories', id, updates, ['name']);
 
-  if (affected === 0) return null;
+  if (!updated) return null;
 
-  return Category.findByPk(id);
+  return findCategory(id);
 };
 
 export const removeCategory = async (id) => {
-  const deleted = await Category.destroy({ where: { id } });
+  const results = await batch([
+    {
+      sql: 'UPDATE "Books" SET "categoryId" = NULL, "updatedAt" = ? WHERE "categoryId" = ?',
+      args: [nowIso(), id],
+    },
+    { sql: 'DELETE FROM "Categories" WHERE "id" = ?', args: [id] },
+  ]);
 
-  return deleted > 0;
+  return results[1].rowsAffected > 0;
 };

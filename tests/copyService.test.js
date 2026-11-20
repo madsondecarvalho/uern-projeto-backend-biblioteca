@@ -44,8 +44,8 @@ describe('copyService', () => {
 
   it('throws 409 when code is duplicated', async () => {
     const payload = { code: 'BC-001', bookId: 1 };
-    const err = new Error('Unique constraint');
-    err.name = 'SequelizeUniqueConstraintError';
+    const err = new Error('SQLITE_CONSTRAINT: UNIQUE constraint failed: Copies.code');
+    err.code = 'SQLITE_CONSTRAINT';
     jest.spyOn(copyModel, 'addCopy').mockRejectedValue(err);
 
     await expect(createCopy(payload)).rejects.toThrow(ServiceError);

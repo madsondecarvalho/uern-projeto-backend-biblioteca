@@ -14,9 +14,10 @@ Projeto de backend em Node.js/Express que expõe recursos de livros, autores, ca
 - `server.js` - inicializador do servidor e configuração global do Express.
 - `src/controllers` - handlers HTTP que chamam o serviço e mapeiam erros para respostas JSON.
 - `src/services` - lógica de domínio (validações, fluxo de CRUD) e lançamento de `ServiceError` quando necessário.
-- `src/models` - armazenamento em memória simulando persistência e operações básicas de CRUD.
+- `src/models` - acesso ao banco libSQL/Turso com SQL parametrizado.
 - `src/routes` - definição das rotas da API (já integrada ao `Express`).
-- `tests` - suites unitários para service e controller com Jest + mocks.
+- `tests` - suítes unitárias para service e controller com Jest + mocks, além de testes de integração dos models com SQLite em memória.
+- `scripts/db` - schema, migrations e seed idempotentes do banco.
 
 ## Documentação
 
@@ -28,26 +29,34 @@ A documentação completa da API com endpoints, schemas, exemplos curl e diagram
 - [Reservas](docs/reservations.md) — Fluxo completo
 - [Usuários e Roles](docs/users.md)
 - [Health Check](docs/health.md)
+- [Banco de dados (Turso)](docs/database.md)
 - [CI/CD](docs/ci.md)
 - [Diagrama de Classes](docs/class-diagram.md)
 
 ## Pré-requisitos
-- Node.js 22 (recomendado) com npm.
-- Docker e Docker Compose (para execução com banco PostgreSQL).
+- Node.js 22 (definido em `.nvmrc`) com npm.
+- Docker e Docker Compose (opcional, para execução em container).
+- Conta no [Turso](https://turso.tech) para produção, ou SQLite local para desenvolvimento.
 
 ## Instalação
 
 ### Local (sem Docker)
 ```bash
 npm install
+cp .env.example .env
+npm run db:setup
 ```
 
-### Com Docker Compose (recomendado)
-Sobe a aplicação e o banco PostgreSQL em containers:
+> No Windows/PowerShell: `Copy-Item .env.example .env`.
+
+### Com Docker Compose (opcional)
+Sobe a API com um banco SQLite local persistido em volume:
 
 ```bash
 docker compose up -d
 ```
+
+Para usar o Turso remoto, preencha `TURSO_DATABASE_URL` e `TURSO_AUTH_TOKEN` no `.env` antes de subir.
 
 A API ficará disponível em `http://localhost:3333`.
 
@@ -57,7 +66,7 @@ Para parar os containers:
 docker compose down
 ```
 
-Para remover também o volume do banco:
+Para remover também o volume do banco local:
 
 ```bash
 docker compose down -v
@@ -66,18 +75,41 @@ docker compose down -v
 ## Execução
 
 ### Local (sem Docker)
-Certifique-se de ter um PostgreSQL rodando e as variáveis de ambiente configuradas (veja `.env`), então inicie o servidor:
+Configure o banco no `.env` e inicie o servidor:
 
 ```bash
 npm start
 ```
 
+## Banco de dados (Turso/libSQL)
+
+O projeto usa [Turso](https://turso.tech), que fala **libSQL** (SQLite). Não há mais PostgreSQL/Sequelize.
+
+| Variável | Uso |
+|----------|-----|
+| `TURSO_DATABASE_URL` | `file:./biblioteca.db` em desenvolvimento ou `libsql://...` em produção |
+| `TURSO_AUTH_TOKEN` | token do banco Turso (vazio para arquivo local) |
+
+Comandos:
+
+```bash
+npm run db:migrate   # cria/atualiza tabelas e índices
+npm run db:seed      # insere dados de demonstração (ignora se já houver dados)
+npm run db:setup     # db:migrate + db:seed
+```
+
+Os scripts são idempotentes e podem rodar novamente sem duplicar o schema ou os dados de demonstração.
+
 ## Testes
-- Execute os testes unitários com:
+- Testes unitários:
   ```bash
-  npm test
+  npm run test:unit
   ```
-- A versão usada no CI (com cobertura) é:
+- Testes de integração (models com SQLite em memória):
+  ```bash
+  npm run test:integration
+  ```
+- Suíte completa com cobertura:
   ```bash
   npm run test:ci
   ```
@@ -88,9 +120,10 @@ O pipeline está em [`.github/workflows/ci.yml`](.github/workflows/ci.yml) e rod
 
 | Job | O que faz |
 |-----|-----------|
-| `Testes unitários` | `npm ci` + Jest com cobertura; publica o artefato `coverage` |
+| `Testes unitários` | `npm ci` + Jest com cobertura (sem os testes de integração); publica o artefato `coverage` |
+| `Testes de integração` | Jest nos models com SQLite em memória |
 | `Build` | instala só dependências de produção (`npm ci --omit=dev`) e valida o carregamento da aplicação com `npm run build` |
-| `Smoke test` | sobe um PostgreSQL 16, roda as migrations, inicia a API e valida `GET /api/health` |
+| `Smoke test` | aplica schema/seed em SQLite local, inicia a API e valida health + fluxo de livros, login, usuários, cópias e reservas |
 | `Deploy no Render` | em push na `main`, dispara o deploy hook — somente se o secret existir |
 
 A versão do Node é fixada em `.nvmrc` (22) e usada pelo CI e pelo Render.
@@ -114,7 +147,7 @@ Sem esse secret, o job de deploy apenas registra um aviso e não falha. Se o Aut
 
 ## Notas rápidas
 - A API segue ESM (`"type": "module"`) e usa o `babel-jest` para transformar os testes com Jest.
-- Para alterar dados iniciais, edite `src/models/bookModel.js` (os dados ficam em memória enquanto o processo estiver ativo).
+- Para alterar dados iniciais, edite `scripts/db/seedData.js` e rode `npm run db:seed` em um banco vazio.
 
 ## Exemplos de `curl`
 - **Listar livros:**
@@ -129,13 +162,13 @@ Sem esse secret, o job de deploy apenas registra um aviso e não falha. Se o Aut
   ```bash
   curl -X POST http://localhost:3333/api/books \
     -H "Content-Type: application/json" \
-    -d '{"title":"Iracema","author":"José de Alencar","year":1865,"available":true}'
+    -d '{"title":"Iracema","authorId":1,"year":1865,"categoryId":1}'
   ```
 - **Atualizar livro:**
   ```bash
   curl -X PUT http://localhost:3333/api/books/1 \
     -H "Content-Type: application/json" \
-    -d '{"title":"Iracema","author":"J. de Alencar","year":1865,"available":false}'
+    -d '{"title":"Iracema","authorId":1,"year":1865,"categoryId":2}'
   ```
 - **Remover livro:**
   ```bash

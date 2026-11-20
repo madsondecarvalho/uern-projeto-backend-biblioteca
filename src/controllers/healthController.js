@@ -1,6 +1,6 @@
-import sequelize from '../config/database.js';
+import { pingDatabase } from '../config/database.js';
 
-// Health check: confirma que a API está no ar e que o PostgreSQL responde.
+// Health check: confirma que a API está no ar e que o Turso responde.
 // Retorna 200 quando tudo está ok e 503 quando o banco está indisponível,
 // para que monitoramentos/load balancers detectem o problema.
 export const healthCheck = async (req, res) => {
@@ -14,7 +14,7 @@ export const healthCheck = async (req, res) => {
   };
 
   try {
-    await sequelize.authenticate();
+    await pingDatabase();
     return res.json(health);
   } catch (err) {
     console.error('[health] banco indisponível:', err?.message);

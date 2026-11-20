@@ -1,4 +1,5 @@
 import * as authorModel from '../models/authorModel.js';
+import { isUniqueConstraintError } from '../models/dbHelpers.js';
 
 export class ServiceError extends Error {
   constructor(message, status = 500) {
@@ -23,7 +24,7 @@ export const createAuthor = async (payload) => {
   try {
     return await authorModel.addAuthor(payload);
   } catch (err) {
-    if (err.name === 'SequelizeUniqueConstraintError') {
+    if (isUniqueConstraintError(err)) {
       throw new ServiceError('Autor já existe', 409);
     }
     throw err;
