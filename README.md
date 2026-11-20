@@ -30,7 +30,8 @@ A documentação completa da API com endpoints, schemas, exemplos curl e diagram
 - [Usuários e Roles](docs/users.md)
 - [Health Check](docs/health.md)
 - [Banco de dados (Turso)](docs/database.md)
-- [CI/CD](docs/ci.md)
+- [CORS](docs/cors.md)
+- [CI/CD](docs/ci.md) — GitHub Actions, migrations no Turso e deploy no Render
 - [Diagrama de Classes](docs/class-diagram.md)
 
 ## Pré-requisitos
@@ -100,6 +101,22 @@ npm run db:setup     # db:migrate + db:seed
 
 Os scripts são idempotentes e podem rodar novamente sem duplicar o schema ou os dados de demonstração.
 
+## CORS
+
+As origens liberadas são configuradas por variável de ambiente:
+
+```env
+FRONTEND_URLS=https://biblioteca-frontend-projeto-uern.vercel.app,http://localhost:3000,http://localhost:5173
+```
+
+- Use o origin completo, **sem caminho e sem barra final**.
+- Separe múltiplos origins por vírgula.
+- Aceita curingas, como `https://*.vercel.app`.
+- Se nenhuma variável for configurada, a API libera qualquer origem (útil apenas em desenvolvimento).
+- Aliases aceitos: `CORS_ORIGINS`, `FRONTEND_URL`, `CORS_ORIGIN`.
+
+Para cookies/credenciais, defina `CORS_CREDENTIALS=true`. Detalhes e troubleshooting em [`docs/cors.md`](docs/cors.md).
+
 ## Testes
 - Testes unitários:
   ```bash
@@ -149,7 +166,7 @@ Para rodar manualmente: **Actions → CI → Run workflow** na branch `main`. O 
 
 ### Deploy controlado pelo CI (opcional)
 
-Por padrão, o Render faz deploy automático a cada push na branch conectada. Para o deploy só acontecer depois que testes, build e smoke test passarem:
+Por padrão, o Render faz deploy automático a cada push na branch conectada. Para o deploy só acontecer depois que testes, build, smoke test e migrations passarem:
 
 1. No Render, abra **Settings → Deploy Hook** e copie a URL.
 2. Desabilite o **Auto-Deploy** do serviço.

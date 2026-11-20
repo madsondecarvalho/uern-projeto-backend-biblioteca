@@ -1,4 +1,5 @@
 import app from '../src/app.js';
+import { applyCorsHeaders } from '../src/config/cors.js';
 import { pingDatabase } from '../src/config/database.js';
 
 // Duração máxima da function (plano hobby: máx. 10s).
@@ -15,8 +16,9 @@ process.on('unhandledRejection', (reason) => {
 // http.ServerResponse) — NÃO têm .status() nem .json() do Express.
 // Usar esses helpers aqui lança TypeError dentro do handler async →
 // unhandled rejection → processo morre → FUNCTION_INVOCATION_FAILED.
-function sendJson(res, status, obj) {
+function sendJson(req, res, status, obj) {
   if (!res.headersSent) {
+    applyCorsHeaders(req, res);
     res.statusCode = status;
     res.setHeader('Content-Type', 'application/json');
   }
@@ -65,6 +67,11 @@ async function ensureDb() {
 }
 
 export default async function handler(req, res) {
+  // Preflight não precisa de banco: deixa o Express/cors responder.
+  if (req.method === 'OPTIONS') {
+    return app(req, res);
+  }
+
   // Health check vai direto para o Express: o próprio controller testa o banco
   // e responde 503 (em vez de 500) quando ele está indisponível.
   if (req.url === '/api/health' || req.url.startsWith('/api/health?')) {
@@ -76,11 +83,11 @@ export default async function handler(req, res) {
   if (req.url === '/' || req.url === '/api' || req.url === '/api/') {
     try {
       await ensureDb();
-      return sendJson(res, 200, { status: 'ok', db: 'connected' });
+      return sendJson(req, res, 200, { status: 'ok', db: 'connected' });
     } catch (err) {
       console.error('[api] DB fail:', err?.code || err?.name, '-', err?.message);
       // Mesmo sem banco, prova que a function executou (não crashou).
-      return sendJson(res, 200, { status: 'up', db: 'disconnected', detail: err?.message });
+      return sendJson(req, res, 200, { status: 'up', db: 'disconnected', detail: err?.message });
     }
   }
 
@@ -89,7 +96,7 @@ export default async function handler(req, res) {
   } catch (err) {
     console.error('[api] DB fail:', err?.code || err?.name, '-', err?.message);
     const status = err?.code === 'DB_CONNECT_TIMEOUT' ? 504 : 500;
-    return sendJson(res, status, { error: 'Erro de conexão com o banco de dados', detail: err?.message });
+    return sendJson(req, res, status, { error: 'Erro de conexão com o banco de dados', detail: err?.message });
   }
 
   return app(req, res);

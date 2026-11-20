@@ -13,7 +13,8 @@ API REST para gerenciamento de biblioteca com CRUD de livros, autores, categoria
 - [Usuários e Roles](users.md)
 - [Health Check](health.md)
 - [Banco de dados (Turso)](database.md)
-- [CI/CD](ci.md)
+- [CORS](cors.md)
+- [CI/CD](ci.md) — GitHub Actions, migrations no Turso e deploy no Render
 
 ## Informações Gerais
 

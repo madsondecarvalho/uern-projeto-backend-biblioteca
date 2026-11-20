@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import corsOptions from './config/cors.js';
 import swaggerSpec from './config/swagger.js';
 import bookRoutes from './routes/bookRoutes.js';
 import authRoutes from './routes/authRoutes.js';
@@ -13,24 +14,11 @@ import healthRoutes from './routes/healthRoutes.js';
 const app = express();
 
 app.set('trust proxy', 1);
+
+// CORS antes do JSON: assim até erros de body inválido e preflight recebem
+// os headers corretos. Origens vêm de FRONTEND_URLS/CORS_ORIGINS.
+app.use(cors(corsOptions));
 app.use(express.json());
-// Libera o front (ex: https://biblioteca-frontend-projeto-uern.vercel.app).
-// ATENÇÃO: no CORS vale só o origin (protocolo + host), sem caminho (/login).
-// Defina FRONTEND_URLS na Vercel com os origins separados por vírgula.
-// Sem a variável, fica aberto (útil no desenvolvimento local).
-const FRONTEND_URLS = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || '')
-  .split(',')
-  .map((s) => s.trim())
-  .filter(Boolean);
-app.use(
-  cors({
-    origin: FRONTEND_URLS.length > 0 ? FRONTEND_URLS : true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: false, // auth via header Bearer (JWT), sem cookies
-    maxAge: 86400, // cache do preflight por 24h (menos invocações na Vercel)
-  })
-);
 
 app.get('/', (req, res) => {
   res.json({ status: 'ok', message: 'Biblioteca API rodando. Docs em /api/docs' });
