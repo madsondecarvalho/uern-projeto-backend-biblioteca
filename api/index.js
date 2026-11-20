@@ -64,6 +64,12 @@ async function ensureDb() {
 }
 
 export default async function handler(req, res) {
+  // Health check vai direto para o Express: o próprio controller testa o banco
+  // e responde 503 (em vez de 500) quando ele está indisponível.
+  if (req.url === '/api/health' || req.url.startsWith('/api/health?')) {
+    return app(req, res);
+  }
+
   // Diagnóstico: '/' responde SEM banco. Se '/' abre e o resto crasha, o
   // runtime está OK e o problema é o banco. Se '/' crasha, é import/runtime.
   if (req.url === '/' || req.url === '/api' || req.url === '/api/') {

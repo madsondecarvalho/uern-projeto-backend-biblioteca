@@ -3,7 +3,7 @@ const swaggerSpec = {
   "info": {
     "title": "Biblioteca API",
     "version": "1.0.0",
-    "description": "API de gerenciamento de biblioteca com CRUD de livros, autores, categorias, cópias, reservas, usuários e autenticação JWT.\n\nEndpoints de escrita em usuários, categorias, autores e cópias (POST/PUT/DELETE) são restritos a administradores.\n\nTodas as listagens suportam paginação com os parâmetros ?page=1&limit=10 (padrão).\n\nA listagem de livros aceita também os filtros ?categoryId=N e ?authorId=N.\nA listagem de cópias aceita os filtros ?bookId=N e ?status=AVAILABLE.\nA listagem de reservas aceita o filtro ?status=PENDING.\n\nUsuários autenticados podem reservar cópias disponíveis. Ao reservar, a cópia fica com status RESERVED por 24h.\nAdmin pode confirmar a retirada (PICKED_UP → BORROWED), cancelar ou marcar como expirada (→ AVAILABLE)."
+    "description": "API de gerenciamento de biblioteca com CRUD de livros, autores, categorias, cópias, reservas, usuários e autenticação JWT.\n\nEndpoints de escrita em usuários, categorias, autores e cópias (POST/PUT/DELETE) são restritos a administradores.\n\nTodas as listagens suportam paginação com os parâmetros ?page=1&limit=10 (padrão).\n\nA listagem de livros aceita também os filtros ?categoryId=N e ?authorId=N.\nA listagem de cópias aceita os filtros ?bookId=N e ?status=AVAILABLE.\nA listagem de reservas aceita o filtro ?status=PENDING.\n\nUsuários autenticados podem reservar cópias disponíveis. Ao reservar, a cópia fica com status RESERVED por 24h.\nAdmin pode confirmar a retirada (PICKED_UP → BORROWED), cancelar ou marcar como expirada (→ AVAILABLE).\n\nO endpoint GET /health (sem autenticação) verifica se a API está no ar e se o banco responde."
   },
   "servers": [
     {
@@ -39,6 +39,10 @@ const swaggerSpec = {
     {
       "name": "Users",
       "description": "Operações com usuários"
+    },
+    {
+      "name": "Health",
+      "description": "Verificação de saúde da API"
     }
   ],
   "paths": {
@@ -2197,6 +2201,49 @@ const swaggerSpec = {
           }
         }
       }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Health check",
+        "description": "Verifica se a API está no ar e se o PostgreSQL responde. Retorna 503 quando o banco está indisponível.",
+        "responses": {
+          "200": {
+            "description": "API e banco operacionais",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                },
+                "example": {
+                  "status": "ok",
+                  "database": "up",
+                  "uptime": 123,
+                  "timestamp": "2026-11-20T12:00:00.000Z"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "API no ar, mas banco indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                },
+                "example": {
+                  "status": "degraded",
+                  "database": "down",
+                  "uptime": 123,
+                  "timestamp": "2026-11-20T12:00:00.000Z"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2633,6 +2680,36 @@ const swaggerSpec = {
             "format": "date-time"
           },
           "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Health": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "degraded"
+            ],
+            "example": "ok"
+          },
+          "database": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down"
+            ],
+            "example": "up"
+          },
+          "uptime": {
+            "type": "integer",
+            "description": "Tempo de atividade do processo em segundos",
+            "example": 123
+          },
+          "timestamp": {
             "type": "string",
             "format": "date-time"
           }

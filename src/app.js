@@ -8,6 +8,7 @@ import categoryRoutes from './routes/categoryRoutes.js';
 import authorRoutes from './routes/authorRoutes.js';
 import copyRoutes from './routes/copyRoutes.js';
 import reservationRoutes from './routes/reservationRoutes.js';
+import healthRoutes from './routes/healthRoutes.js';
 
 const app = express();
 
@@ -83,6 +84,7 @@ app.get(['/api/docs', '/api/docs/'], (req, res) => {
   res.type('html').send(docsHtml);
 });
 
+app.use('/api', healthRoutes);
 app.use('/api', authRoutes);
 app.use('/api', bookRoutes);
 app.use('/api', userRoutes);

@@ -25,6 +25,7 @@ A documentação completa da API com endpoints, schemas, exemplos curl e diagram
 - [Autores](docs/authors.md), [Categorias](docs/categories.md), [Cópias](docs/copies.md)
 - [Reservas](docs/reservations.md) — Fluxo completo
 - [Usuários e Roles](docs/users.md)
+- [Health Check](docs/health.md)
 - [Diagrama de Classes](docs/class-diagram.md)
 
 ## Pré-requisitos
