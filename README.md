@@ -106,12 +106,12 @@ Os scripts são idempotentes e podem rodar novamente sem duplicar o schema ou os
 As origens liberadas são configuradas por variável de ambiente:
 
 ```env
-FRONTEND_URLS=https://biblioteca-frontend-projeto-uern.vercel.app,http://localhost:3000,http://localhost:5173
+FRONTEND_URLS=https://biblioteca-frontend-projeto-uern.onrender.com,http://localhost:3000,http://localhost:5173
 ```
 
 - Use o origin completo, **sem caminho e sem barra final**.
 - Separe múltiplos origins por vírgula.
-- Aceita curingas, como `https://*.vercel.app`.
+- Aceita curingas, como `https://*.onrender.com`.
 - Se nenhuma variável for configurada, a API libera qualquer origem (útil apenas em desenvolvimento).
 - Aliases aceitos: `CORS_ORIGINS`, `FRONTEND_URL`, `CORS_ORIGIN`.
 

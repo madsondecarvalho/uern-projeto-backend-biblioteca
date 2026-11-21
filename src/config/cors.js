@@ -1,12 +1,30 @@
 const ALLOWED_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'];
 
+// Front oficial do projeto. Serve de fallback quando a variável de ambiente
+// estiver ausente ou contiver uma URL antiga/incorreta com caminho.
+const DEFAULT_FRONTEND_ORIGINS = [
+  'https://biblioteca-frontend-projeto-uern.onrender.com',
+];
+
 const parseList = (value) =>
   String(value || '')
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean);
 
-const normalizeOrigin = (value) => value.trim().replace(/\/+$/, '');
+// Aceita URL completa com caminho (/login) e converte para origin.
+const normalizeOrigin = (value) => {
+  const trimmed = value.trim();
+
+  if (!trimmed) return '';
+  if (trimmed.includes('*')) return trimmed.replace(/\/+$/, '');
+
+  try {
+    return new URL(trimmed).origin;
+  } catch {
+    return trimmed.replace(/\/+$/, '');
+  }
+};
 
 const escapeRegex = (value) => value.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
 
@@ -45,8 +63,19 @@ export const isOriginAllowed = (origin, origins = []) => {
   return origins.some((allowed) => matchesOrigin(normalized, allowed));
 };
 
+// Mantém o comportamento aberto quando não há configuração (desenvolvimento).
+// Quando há configuração, inclui o front oficial como fallback para não
+// quebrar caso a variável esteja com uma URL antiga ou com caminho.
+export const getAllowedOrigins = (env = process.env) => {
+  const configured = parseCorsOrigins(env);
+
+  if (configured.length === 0) return [];
+
+  return [...new Set([...configured, ...DEFAULT_FRONTEND_ORIGINS])];
+};
+
 export const createCorsConfig = (env = process.env) => {
-  const origins = parseCorsOrigins(env);
+  const origins = getAllowedOrigins(env);
   const allowedHeaders = parseList(env.CORS_ALLOWED_HEADERS);
   const credentials = String(env.CORS_CREDENTIALS || '').toLowerCase() === 'true';
   const parsedMaxAge = Number(env.CORS_MAX_AGE);

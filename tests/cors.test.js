@@ -1,23 +1,34 @@
 import {
   applyCorsHeaders,
   createCorsConfig,
+  getAllowedOrigins,
   isOriginAllowed,
   parseCorsOrigins,
 } from '../src/config/cors.js';
 
 describe('configuração de CORS', () => {
-  it('lê origens de FRONTEND_URLS/CORS_ORIGINS e remove barras finais', () => {
+  it('lê origens de FRONTEND_URLS/CORS_ORIGINS e remove caminho e barras finais', () => {
     expect(parseCorsOrigins({
       FRONTEND_URLS: 'https://front.vercel.app/, http://localhost:5173',
     })).toEqual(['https://front.vercel.app', 'http://localhost:5173']);
 
     expect(parseCorsOrigins({
-      CORS_ORIGINS: 'https://outro.com/',
-    })).toEqual(['https://outro.com']);
+      CORS_ORIGINS: 'https://biblioteca-frontend-projeto-uern.onrender.com/login',
+    })).toEqual(['https://biblioteca-frontend-projeto-uern.onrender.com']);
   });
 
   it('libera qualquer origem quando a variável não está configurada', () => {
     expect(isOriginAllowed('https://qualquer.com', [])).toBe(true);
+    expect(getAllowedOrigins({})).toEqual([]);
+  });
+
+  it('inclui o front oficial como fallback quando há configuração', () => {
+    const origins = getAllowedOrigins({
+      FRONTEND_URLS: 'https://url-antiga.example.com',
+    });
+
+    expect(origins).toContain('https://url-antiga.example.com');
+    expect(origins).toContain('https://biblioteca-frontend-projeto-uern.onrender.com');
   });
 
   it('aceita origem exata e rejeita origem diferente', () => {

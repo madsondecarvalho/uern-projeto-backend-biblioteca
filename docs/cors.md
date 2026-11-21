@@ -8,7 +8,7 @@ A implementação fica em [`src/config/cors.js`](../src/config/cors.js) e é apl
 
 | Variável | Obrigatória | Descrição |
 |----------|-------------|-----------|
-| `FRONTEND_URLS` | Recomendada | Origins completos separados por vírgula, por exemplo `https://front.vercel.app,http://localhost:5173` |
+| `FRONTEND_URLS` | Recomendada | Origins completos separados por vírgula, por exemplo `https://meu-front.onrender.com,http://localhost:5173` |
 | `CORS_ORIGINS` | Alternativa | Alias para `FRONTEND_URLS` |
 | `FRONTEND_URL` | Alternativa | Um único origin (compatibilidade) |
 | `CORS_ORIGIN` | Alternativa | Alias singular |
@@ -24,42 +24,44 @@ CORS_ORIGINS > FRONTEND_URLS > FRONTEND_URL > CORS_ORIGIN
 
 ### Regras de formato
 
-- Use o **origin** completo: protocolo + host + porta, sem caminho.
+- Use o **origin** completo: protocolo + host + porta.
 - Não use barra final:
-  - Correto: `https://meu-front.vercel.app`
-  - Errado: `https://meu-front.vercel.app/`
+  - Correto: `https://meu-front.onrender.com`
+  - Errado: `https://meu-front.onrender.com/`
+- Se colar uma URL com caminho, como `https://meu-front.onrender.com/login`, o backend normaliza para o origin `https://meu-front.onrender.com`.
 - Separe múltiplos origins por vírgula.
-- Curingas são aceitos: `https://*.vercel.app`.
+- Curingas são aceitos: `https://*.onrender.com`.
 - Sem nenhuma variável configurada, a API libera qualquer origem (útil apenas em desenvolvimento).
+- Quando existe configuração, o front oficial `https://biblioteca-frontend-projeto-uern.onrender.com` também é incluído como fallback.
 
 ## Exemplos
 
 Front em produção:
 
 ```env
-FRONTEND_URLS=https://biblioteca-frontend-projeto-uern.vercel.app
+FRONTEND_URLS=https://biblioteca-frontend-projeto-uern.onrender.com
 ```
 
 Produção + desenvolvimento local:
 
 ```env
-FRONTEND_URLS=https://biblioteca-frontend-projeto-uern.vercel.app,http://localhost:3000,http://localhost:5173
+FRONTEND_URLS=https://biblioteca-frontend-projeto-uern.onrender.com,http://localhost:3000,http://localhost:5173
 ```
 
 Front com cookies/credenciais:
 
 ```env
-FRONTEND_URLS=https://meu-front.vercel.app
+FRONTEND_URLS=https://biblioteca-frontend-projeto-uern.onrender.com
 CORS_CREDENTIALS=true
 ```
 
-Previews da Vercel:
+Múltiplos subdomínios:
 
 ```env
-FRONTEND_URLS=https://biblioteca-frontend-projeto-uern.vercel.app,https://*.vercel.app
+FRONTEND_URLS=https://biblioteca-frontend-projeto-uern.onrender.com,https://*.onrender.com
 ```
 
-> Evite `https://*.vercel.app` em produção se não precisar liberar qualquer projeto da Vercel. Prefira o domínio fixo.
+> Evite `https://*.onrender.com` em produção se não precisar liberar outros serviços. Prefira o domínio fixo.
 
 ## Onde configurar
 
@@ -76,7 +78,7 @@ FRONTEND_URLS=http://localhost:3000,http://localhost:5173
 Em **Settings → Environment Variables**, adicione `FRONTEND_URLS` com a URL real do front:
 
 ```env
-FRONTEND_URLS=https://biblioteca-frontend-projeto-uern.vercel.app
+FRONTEND_URLS=https://biblioteca-frontend-projeto-uern.onrender.com
 ```
 
 Depois de alterar variáveis de ambiente, o Render precisa de um novo deploy para aplicar.
@@ -124,7 +126,7 @@ Nesse caso, o header `Access-Control-Allow-Origin` não deve aparecer.
 | Erro após colar a URL | Barra final ou caminho na variável | Use só `protocolo://host[:porta]` |
 | Preflight falha | Headers customizados não permitidos | Deixe `CORS_ALLOWED_HEADERS` vazio (reflete o pedido) ou inclua o header |
 | Funciona com token, falha com cookies | Credenciais desabilitadas | Defina `CORS_CREDENTIALS=true` |
-| Erro em preview da Vercel | URL de preview muda | Adicione um curinga ou o domínio de preview |
+| Erro em preview/subdomínio | URL de preview muda | Adicione um curinga ou o domínio de preview |
 | `503` no `/api/health` | Banco indisponível, não CORS | Verifique Turso e migrations |
 
 ## Segurança
